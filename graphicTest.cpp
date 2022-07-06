@@ -1,6 +1,9 @@
 #include<graphics.h>
 #include<math.h>
 #include<windows.h>
+#include<time.h>
+#include <chrono>
+#include <thread>
 
 void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]);
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
@@ -37,8 +40,39 @@ int main(int argc, char const *argv[]){
     };
 
     float pC[12][9] = {0};
+    float tC[12][9] = {0};
+    float matRotZ[4][4]={0};
+    float matRotX[4][4] ={0};
+    float rCz[12][9];
+    float rCx[12][9];
+    float fTheta = 0;
+    // fTheta+= 1.0f * clock();
+    while(1){
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     cleardevice();
+    fTheta+= 0.1f;
+    //rotation z
+    matRotZ[0][0]=cosf(fTheta);
+    matRotZ[0][1]=sinf(fTheta);
+    matRotZ[1][0]=-sinf(fTheta);
+    matRotZ[1][1]=cosf(fTheta);
+    matRotZ[2][2]=1;
+    matRotZ[3][3]=1;
+
+    //Rotation x
+    matRotX[0][0]=1;
+    matRotX[1][1]=cosf(fTheta *0.5f);
+    matRotX[1][2]=sinf(fTheta *0.5f);
+    matRotX[2][1]=-sinf(fTheta *0.5f);
+    matRotX[2][2]=cosf(fTheta *0.5f);;
+    matRotX[3][3]=1;
+
+    for(int i=0; i< 12; i++){
+        for(int j=0; j<9; j++){
+            tC[i][j]=cube[i][j];
+        }
+    }
 
     float tm[4][4] ={0};
     float fNear = 0.1f; //near plane
@@ -58,7 +92,15 @@ int main(int argc, char const *argv[]){
 
     //draw triangles
     for(int i=0;i<12; i++){
-            MultiplyMatrixVector(cube[i],pC[i],pM);
+            tC[i][2]=cube[i][2] + 3.0f;
+            tC[i][5]=cube[i][5] + 3.0f;
+            tC[i][8]=cube[i][8] + 3.0f;
+            //rotate in z axis
+            MultiplyMatrixVector(tC[i],rCz[i],matRotZ);
+            //rotate in x axis
+            MultiplyMatrixVector(rCz[i],rCx[i],matRotX);
+
+            MultiplyMatrixVector(rCx[i],pC[i],pM);
 
             //scale into view
             pC[i][0]+=1.0f;pC[i][1]+=1.0f;
@@ -74,7 +116,7 @@ int main(int argc, char const *argv[]){
 
             drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
     } 
-
+    }
     getch();
     closegraph();
     return 0;
