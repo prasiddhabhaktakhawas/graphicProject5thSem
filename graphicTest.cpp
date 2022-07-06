@@ -39,16 +39,18 @@ int main(int argc, char const *argv[]){
         {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f}
     };
 
-    float pC[12][9] = {0};
-    float tC[12][9] = {0};
+    float pC[12][9] = {0};  //projected cube
+    float tC[12][9] = {0};     //translated cube
     float matRotZ[4][4]={0};
     float matRotX[4][4] ={0};
+    float matRotY[4][4] ={0};
     float rCz[12][9];
     float rCx[12][9];
+    float rCy[12][9];
     float fTheta = 0;
     // fTheta+= 1.0f * clock();
     while(1){
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
     cleardevice();
     fTheta+= 0.1f;
@@ -60,6 +62,14 @@ int main(int argc, char const *argv[]){
     matRotZ[2][2]=1;
     matRotZ[3][3]=1;
 
+    //rotation y
+    matRotY[0][0]=cosf(fTheta*0.5f);
+    matRotY[0][2]=-sinf(fTheta*0.5f);
+    matRotY[1][1]=1;
+    matRotY[2][0]=sinf(fTheta*0.5f);
+    matRotY[2][2]=cosf(fTheta*0.5f);
+    matRotY[3][3]=1;
+
     //Rotation x
     matRotX[0][0]=1;
     matRotX[1][1]=cosf(fTheta *0.5f);
@@ -67,12 +77,6 @@ int main(int argc, char const *argv[]){
     matRotX[2][1]=-sinf(fTheta *0.5f);
     matRotX[2][2]=cosf(fTheta *0.5f);;
     matRotX[3][3]=1;
-
-    for(int i=0; i< 12; i++){
-        for(int j=0; j<9; j++){
-            tC[i][j]=cube[i][j];
-        }
-    }
 
     float tm[4][4] ={0};
     float fNear = 0.1f; //near plane
@@ -92,17 +96,28 @@ int main(int argc, char const *argv[]){
 
     //draw triangles
     for(int i=0;i<12; i++){
-            tC[i][2]=cube[i][2] + 3.0f;
-            tC[i][5]=cube[i][5] + 3.0f;
-            tC[i][8]=cube[i][8] + 3.0f;
+            
             //rotate in z axis
-            MultiplyMatrixVector(tC[i],rCz[i],matRotZ);
+            MultiplyMatrixVector(cube[i],rCz[i],matRotZ);
             //rotate in x axis
             MultiplyMatrixVector(rCz[i],rCx[i],matRotX);
+            //rotate in y axis
+            // MultiplyMatrixVector(rCz[i],rCy[i], matRotY);
 
-            MultiplyMatrixVector(rCx[i],pC[i],pM);
+            for(int i=0; i< 12; i++){
+                for(int j=0; j<9; j++){
+                    tC[i][j]=rCx[i][j];
+                }
+            }   
 
-            //scale into view
+            //translating z axis away from camera, otherwise, camera would be inside object
+            tC[i][2]=rCx[i][2] + 3.0f;
+            tC[i][5]=rCx[i][5] + 3.0f;
+            tC[i][8]=rCx[i][8] + 3.0f;
+
+            MultiplyMatrixVector(tC[i],pC[i],pM);
+
+            //scale into view wrt x and y
             pC[i][0]+=1.0f;pC[i][1]+=1.0f;
             pC[i][3]+=1.0f;pC[i][4]+=1.0f;
             pC[i][6]+=1.0f;pC[i][7]+=1.0f;
