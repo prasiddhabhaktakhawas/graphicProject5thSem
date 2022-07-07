@@ -1,4 +1,5 @@
 #include<graphics.h>
+#include<conio.h>
 #include<math.h>
 #include<windows.h>
 #include<time.h>
@@ -45,36 +46,59 @@ int main(int argc, char const *argv[]){
     float rCz[12][9];
     float rCx[12][9];
     float rCy[12][9];
-    float fTheta = 0;
+    float fThetaX = 0.0;
+    float fThetaY = 0.0;
     // fTheta+= 1.0f * clock();
+    POINT cursorPos;
+    // float xco = 0.0;
+    // float yco = 0.0;
+    float prevXM;
+    float prevYM;
+    float differenceX;
+    float differenceY;
+    bool leftButtonHold=false;
     while(1){
-    std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
+    if((GetKeyState(VK_LBUTTON) & 0x8000) != 0){
     cleardevice();
-    fTheta+= 0.1f;
-    //rotation z
-    matRotZ[0][0]=cosf(fTheta);
-    matRotZ[0][1]=sinf(fTheta);
-    matRotZ[1][0]=-sinf(fTheta);
-    matRotZ[1][1]=cosf(fTheta);
-    matRotZ[2][2]=1;
-    matRotZ[3][3]=1;
+    GetCursorPos(&cursorPos);
+            if(leftButtonHold==false){
+                prevXM = cursorPos.x;
+                prevYM = cursorPos.y;
+                leftButtonHold=true;
+            }
+            differenceX = prevXM-cursorPos.x;
+            differenceY = prevYM-cursorPos.y;
+            fThetaX-=differenceY*0.01;          //dragging mouse in y direction give means rotating wrt to x axis and -ve for invertmouseY just like in videogames
+            fThetaY+=differenceX*0.01;
+            prevXM= cursorPos.x;
+            prevYM= cursorPos.y;
+    
+    // //rotation z
+    // matRotZ[0][0]=cosf(fTheta);
+    // matRotZ[0][1]=sinf(fTheta);
+    // matRotZ[1][0]=-sinf(fTheta);
+    // matRotZ[1][1]=cosf(fTheta);
+    // matRotZ[2][2]=1;
+    // matRotZ[3][3]=1;
 
     //rotation y
-    matRotY[0][0]=cosf(fTheta*0.5f);
-    matRotY[0][2]=-sinf(fTheta*0.5f);
+    matRotY[0][0]=cosf(fThetaY);
+    matRotY[0][2]=-sinf(fThetaY);
     matRotY[1][1]=1;
-    matRotY[2][0]=sinf(fTheta*0.5f);
-    matRotY[2][2]=cosf(fTheta*0.5f);
+    matRotY[2][0]=sinf(fThetaY);
+    matRotY[2][2]=cosf(fThetaY);
     matRotY[3][3]=1;
 
     //Rotation x
     matRotX[0][0]=1;
-    matRotX[1][1]=cosf(fTheta *0.5f);
-    matRotX[1][2]=sinf(fTheta *0.5f);
-    matRotX[2][1]=-sinf(fTheta *0.5f);
-    matRotX[2][2]=cosf(fTheta *0.5f);;
+    matRotX[1][1]=cosf(fThetaX);
+    matRotX[1][2]=sinf(fThetaX);
+    matRotX[2][1]=-sinf(fThetaX);
+    matRotX[2][2]=cosf(fThetaX);;
     matRotX[3][3]=1;
+    }else{
+            leftButtonHold=false;
+        }
 
     float tm[4][4] ={0};
     float fNear = 0.1f; //near plane
@@ -95,12 +119,12 @@ int main(int argc, char const *argv[]){
     //draw triangles
     for(int i=0;i<12; i++){
             
-            //rotate in z axis
-            MultiplyMatrixVector(cube[i],rCz[i],matRotZ);
-            //rotate in x axis
-            MultiplyMatrixVector(rCz[i],rCx[i],matRotX);
             //rotate in y axis
-            // MultiplyMatrixVector(rCz[i],rCy[i], matRotY);
+            MultiplyMatrixVector(cube[i],rCy[i],matRotY);
+            //rotate in x axis
+            MultiplyMatrixVector(rCy[i],rCx[i],matRotX);
+            //rotate in z axis
+            // MultiplyMatrixVector(rCz[i],rCy[i], matRotZ);
 
             for(int i=0; i< 12; i++){
                 for(int j=0; j<9; j++){
