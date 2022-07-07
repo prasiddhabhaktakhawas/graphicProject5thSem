@@ -57,6 +57,22 @@ int main(int argc, char const *argv[]){
     float differenceX;
     float differenceY;
     bool leftButtonHold=false;
+                                                //for making cube visible at start
+    //rotation y
+    matRotY[0][0]=cosf(fThetaY);
+    matRotY[0][2]=-sinf(fThetaY);
+    matRotY[1][1]=1;
+    matRotY[2][0]=sinf(fThetaY);
+    matRotY[2][2]=cosf(fThetaY);
+    matRotY[3][3]=1;
+
+    //Rotation x
+    matRotX[0][0]=1;
+    matRotX[1][1]=cosf(fThetaX);
+    matRotX[1][2]=sinf(fThetaX);
+    matRotX[2][1]=-sinf(fThetaX);
+    matRotX[2][2]=cosf(fThetaX);;
+    matRotX[3][3]=1;
     while(1){
     if((GetKeyState(VK_LBUTTON) & 0x8000) != 0){
     cleardevice();
@@ -96,9 +112,10 @@ int main(int argc, char const *argv[]){
     matRotX[2][1]=-sinf(fThetaX);
     matRotX[2][2]=cosf(fThetaX);;
     matRotX[3][3]=1;
+    delay(1);
     }else{
             leftButtonHold=false;
-        }
+    }
 
     float tm[4][4] ={0};
     float fNear = 0.1f; //near plane
