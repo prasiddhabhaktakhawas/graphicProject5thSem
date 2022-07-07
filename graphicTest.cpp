@@ -71,6 +71,25 @@ int main(int argc, char const *argv[]){
     matRotX[2][2]=cosf(fThetaX);;
     matRotX[3][3]=1;
 
+    //3d to 2d projection
+
+    float fNear = 0.1f; //near plane
+    float fFar = 1000.0f; //far plane
+    float fFov = 90.0f; // field of view
+    float fAspectRatio = 0.5625f;   // height / width
+    float fFovRad = 1.0f/ tanf(fFov * 0.5f / 180.0f * 3.14159f);
+
+    float pM[4][4] = {0};
+    
+    pM[0][0] = fAspectRatio * fFovRad;
+    pM[1][1] = fFovRad;
+    pM[2][2] = fFar /(fFar -fNear);
+    pM[3][2] = (-fFar * fNear)/ (fFar - fNear);
+    pM[2][3] = 1.0f;
+    pM[3][3] = 0.0f;
+
+    // end of 3d to 2d projection matrix
+
     int page = 0;
     while(1){               //runs always
     setactivepage(page);    // double buffer method
@@ -116,21 +135,6 @@ int main(int argc, char const *argv[]){
             leftButtonHold=false;
     }
 
-    float tm[4][4] ={0};
-    float fNear = 0.1f; //near plane
-    float fFar = 1000.0f; //far plane
-    float fFov = 90.0f; // field of view
-    float fAspectRatio = 0.5625f;
-    float fFovRad = 1.0f/ tanf(fFov * 0.5f / 180.0f * 3.14159f);
-
-    float pM[4][4] = {0};
-    
-    pM[0][0] = fAspectRatio * fFovRad;
-    pM[1][1] = fFovRad;
-    pM[2][2] = fFar /(fFar -fNear);
-    pM[3][2] = (-fFar * fNear)/ (fFar - fNear);
-    pM[2][3] = 1.0f;
-    pM[3][3] = 0.0f;
 
     //draw triangles
     
@@ -157,11 +161,12 @@ int main(int argc, char const *argv[]){
             MultiplyMatrixVector(tC[i],pC[i],pM);
 
             //scale into view wrt x and y
-            pC[i][0]+=1.0f;pC[i][1]+=1.0f;
+            pC[i][0]+=1.0f;pC[i][1]+=1.0f;  //since -1.0 would go out of screen of left side, so +1.0 to bring it to 0, which is inside screen
             pC[i][3]+=1.0f;pC[i][4]+=1.0f;
             pC[i][6]+=1.0f;pC[i][7]+=1.0f;
 
-            pC[i][0]*=0.5f * (float)screenWidth;
+            //scaling it wrt to screen size         //we scale half the total length to make the object appear on center
+            pC[i][0]*=0.5f * (float)screenWidth;    //scaling in x direction is bigger because width is bigger than height, but it's cancelled out by aspect ratio( h/w), so at the end, it is just perfect
             pC[i][1]*=0.5f * (float)screenHeight;
             pC[i][3]*=0.5f * (float)screenWidth;
             pC[i][4]*=0.5f * (float)screenHeight;
@@ -169,8 +174,7 @@ int main(int argc, char const *argv[]){
             pC[i][7]*=0.5f * (float)screenHeight;
 
             if(i==0){
-                cleardevice();
-                std::cout<<"cleared"<<std::endl;
+                cleardevice();  //clear only when just starting to draw next polygon
             }
             
             drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
@@ -181,8 +185,8 @@ int main(int argc, char const *argv[]){
     return 0;
 }
 
-void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]){
-    o[0] =i[0]*m[0][0] + i[1]*m[1][0] + i[2]*m[2][0]+ m[3][0];
+void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]){ //pass by reference
+    o[0] =i[0]*m[0][0] + i[1]*m[1][0] + i[2]*m[2][0]+ m[3][0];  
     o[1] =i[0]*m[0][1] + i[1]*m[1][1] + i[2]*m[2][1]+ m[3][1];
     o[2] =i[0]*m[0][2] + i[1]*m[1][2] + i[2]*m[2][2]+ m[3][2];
     float w=i[0]*m[0][3] + i[1]*m[1][3] + i[2]*m[2][3]+ m[3][3];
