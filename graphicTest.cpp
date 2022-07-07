@@ -131,6 +131,8 @@ int main(int argc, char const *argv[]){
     matRotX[2][1]=-sinf(fThetaX);
     matRotX[2][2]=cosf(fThetaX);;
     matRotX[3][3]=1;
+
+    cleardevice();
     }else{
             leftButtonHold=false;
     }
@@ -153,12 +155,34 @@ int main(int argc, char const *argv[]){
                 }
             }   
 
-            //translating z axis away from camera, otherwise, camera would be inside object
+            // offset into the screen. translating z axis away from camera, otherwise, camera would be inside object
             tC[i][2]=rCx[i][2] + 3.0f;
             tC[i][5]=rCx[i][5] + 3.0f;
             tC[i][8]=rCx[i][8] + 3.0f;
 
-            MultiplyMatrixVector(tC[i],pC[i],pM);
+            float normal[3], line1[3], line2[3];
+
+            line1[0]= tC[i][3] - tC[i][0];
+            line1[1]= tC[i][4] - tC[i][1];
+            line1[2]= tC[i][5] - tC[i][2];
+
+            line2[0]= tC[i][6] - tC[i][0];
+            line2[1]= tC[i][7] - tC[i][1];
+            line2[2]= tC[i][8] - tC[i][2];
+
+            normal[0] = line1[1] * line2[2] - line1[2]*line2[1];
+            normal[1] = line1[2] * line2[0] - line1[0]*line2[2];
+            normal[2] = line1[0] * line2[1] - line1[1]*line2[0];
+
+            float l = sqrt(normal[0]*normal[0] + normal[1]*normal[1]+normal[2]*normal[2]);
+            normal[0]/=l; normal[1]/=l; normal[2]/=l;
+
+            
+
+            if(normal[2]<0){
+
+            //translated cube into projected cube by matrix multiplication with projection matrix
+            MultiplyMatrixVector(tC[i],pC[i],pM); 
 
             //scale into view wrt x and y
             pC[i][0]+=1.0f;pC[i][1]+=1.0f;  //since -1.0 would go out of screen of left side, so +1.0 to bring it to 0, which is inside screen
@@ -172,12 +196,9 @@ int main(int argc, char const *argv[]){
             pC[i][4]*=0.5f * (float)screenHeight;
             pC[i][6]*=0.5f * (float)screenWidth;
             pC[i][7]*=0.5f * (float)screenHeight;
-
-            if(i==0){
-                cleardevice();  //clear only when just starting to draw next polygon
-            }
             
             drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
+            }
     }
     page = 1-page;
     }
