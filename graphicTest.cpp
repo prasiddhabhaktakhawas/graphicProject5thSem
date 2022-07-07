@@ -15,8 +15,6 @@ int main(int argc, char const *argv[]){
     // int gd = DETECT, gm;
     // initgraph(&gd,&gm, (char*)"");
 
-    
-
     float cube[12][9] = {
         //{x,y,z,x,y,z,x,y,z}
         //south
