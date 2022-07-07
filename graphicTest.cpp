@@ -5,6 +5,9 @@
 
 void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]);
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
+float area(float x1, float y1, float x2, float y2, float x3, float y3);
+bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float x, float y);
+void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
 
 int main(int argc, char const *argv[]){
     DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -200,6 +203,7 @@ int main(int argc, char const *argv[]){
             pC[i][7]*=0.5f * (float)screenHeight;
             
             drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
+            fillTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
             }
     }
     page = 1-page;
@@ -234,6 +238,69 @@ void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]){ //pa
 
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
     line(x1,y1,x2,y2);
-    line(x2,y2, x3,y3);
+    line(x2,y2,x3,y3);
     line(x3,y3,x1,y1);
+}
+
+void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
+    float ymin;
+    float ymax;
+    float xmin;
+    float xmax;
+    if(y1>=y2 && y1>=y3)
+        ymax=y1;
+    else if(y2>=y1 && y2>=y3)
+        ymax=y2;
+    else
+        ymax=y3;
+
+    if(y1<=y2 && y1<=y3)
+        ymin=y1;
+    else if(y2<=y1 && y2<=y3)
+        ymin=y2;
+    else
+        ymin=y3;
+
+    if(x1>=x2 && x1>=x3)
+        xmax=x1;
+    else if(x2>=x1 && x2>=x3)
+        xmax=x2;
+    else
+        xmax=x3;
+
+    if(x1<=x2 && x1<=x3)
+        xmin=x1;
+    else if(x2<=x1 && x2<=x3)
+        xmin=x2;
+    else
+        xmin=x3;
+    
+    for(int i=ymin; i<=ymax; i++){
+        for(int j=xmin; j<=xmax; j++){
+            if(isInside(x1,y1,x2,y2,x3,y3,j,i)){
+                putpixel(j,i, WHITE);
+            }
+        }
+    }
+}
+
+float area(float x1, float y1, float x2, float y2, float x3, float y3){
+ 
+    return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2.0);
+}
+
+bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float x, float y){
+
+    float A = area (x1, y1, x2, y2, x3, y3);
+
+    float A1 = area (x, y, x2, y2, x3, y3);
+     
+    float A2 = area (x1, y1, x, y, x3, y3);
+   
+    float A3 = area (x1, y1, x2, y2, x, y);
+     
+    if(A == A1 + A2 + A3)
+        return true;
+    else
+        return false;
 }
