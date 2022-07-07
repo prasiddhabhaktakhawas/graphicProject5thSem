@@ -22,7 +22,7 @@ int main(int argc, char const *argv[]){
         {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},
         {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f},
         //north
-        {1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f},
+        {1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f},
         {1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f},
         //west
         {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f},
@@ -45,6 +45,7 @@ int main(int argc, char const *argv[]){
     float rCy[12][9];
     float fThetaX = 0.0;    //angle of rotation
     float fThetaY = 0.0;
+    float vCamera[3] ={0};     //camera is at origin
     // fTheta+= 1.0f * clock();
     POINT cursorPos;    //mouse cursor position
     // float xco = 0.0;
@@ -160,6 +161,7 @@ int main(int argc, char const *argv[]){
             tC[i][5]=rCx[i][5] + 3.0f;
             tC[i][8]=rCx[i][8] + 3.0f;
 
+            //visible surface detection
             float normal[3], line1[3], line2[3];
 
             line1[0]= tC[i][3] - tC[i][0];
@@ -169,18 +171,18 @@ int main(int argc, char const *argv[]){
             line2[0]= tC[i][6] - tC[i][0];
             line2[1]= tC[i][7] - tC[i][1];
             line2[2]= tC[i][8] - tC[i][2];
-
-            normal[0] = line1[1] * line2[2] - line1[2]*line2[1];
+            //cross products
+            normal[0] = line1[1] * line2[2] - line1[2]*line2[1];    
             normal[1] = line1[2] * line2[0] - line1[0]*line2[2];
             normal[2] = line1[0] * line2[1] - line1[1]*line2[0];
 
-            float l = sqrt(normal[0]*normal[0] + normal[1]*normal[1]+normal[2]*normal[2]);
-            normal[0]/=l; normal[1]/=l; normal[2]/=l;
+            float l = sqrt(normal[0]*normal[0] + normal[1]*normal[1]+normal[2]*normal[2]);  
+            normal[0]/=l; normal[1]/=l; normal[2]/=l;   // unit vector of normal to surface
 
             
 
-            if(normal[2]<0){
-
+            // if(normal[2]<0){
+            if(normal[0]*(tC[i][0]-vCamera[0]) + normal[1]*(tC[i][1]-vCamera[1]) + normal[2]*(tC[i][2]-vCamera[2])<0.0){    //dot product of camera vector and normal vector of surface of cubes
             //translated cube into projected cube by matrix multiplication with projection matrix
             MultiplyMatrixVector(tC[i],pC[i],pM); 
 
