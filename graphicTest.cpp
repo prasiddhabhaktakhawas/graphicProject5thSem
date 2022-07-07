@@ -1,10 +1,7 @@
 #include<graphics.h>
-#include<conio.h>
 #include<math.h>
 #include<windows.h>
-#include<time.h>
-#include <chrono>
-#include <thread>
+#include<iostream>
 
 void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]);
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
@@ -40,23 +37,23 @@ int main(int argc, char const *argv[]){
 
     float pC[12][9] = {0};  //projected cube
     float tC[12][9] = {0};     //translated cube
-    float matRotZ[4][4]={0};
+    float matRotZ[4][4]={0};    //rotation matrix
     float matRotX[4][4] ={0};
     float matRotY[4][4] ={0};
-    float rCz[12][9];
+    float rCz[12][9];   //rotated cube
     float rCx[12][9];
     float rCy[12][9];
-    float fThetaX = 0.0;
+    float fThetaX = 0.0;    //angle of rotation
     float fThetaY = 0.0;
     // fTheta+= 1.0f * clock();
-    POINT cursorPos;
+    POINT cursorPos;    //mouse cursor position
     // float xco = 0.0;
     // float yco = 0.0;
-    float prevXM;
+    float prevXM;   //previous x position of mouse
     float prevYM;
-    float differenceX;
+    float differenceX;  //difference between current and previous x position of mouse
     float differenceY;
-    bool leftButtonHold=false;
+    bool leftButtonHold=false;  //boolean to find out when left mouse button is holded and released
                                                 //for making cube visible at start
     //rotation y
     matRotY[0][0]=cosf(fThetaY);
@@ -73,9 +70,12 @@ int main(int argc, char const *argv[]){
     matRotX[2][1]=-sinf(fThetaX);
     matRotX[2][2]=cosf(fThetaX);;
     matRotX[3][3]=1;
-    while(1){
-    if((GetKeyState(VK_LBUTTON) & 0x8000) != 0){
-    cleardevice();
+
+    int page = 0;
+    while(1){               //runs always
+    setactivepage(page);    // double buffer method
+    setvisualpage(1-page);                    
+    if((GetKeyState(VK_LBUTTON) & 0x8000) != 0){    //when left click is hold
     GetCursorPos(&cursorPos);
             if(leftButtonHold==false){
                 prevXM = cursorPos.x;
@@ -112,7 +112,6 @@ int main(int argc, char const *argv[]){
     matRotX[2][1]=-sinf(fThetaX);
     matRotX[2][2]=cosf(fThetaX);;
     matRotX[3][3]=1;
-    delay(1);
     }else{
             leftButtonHold=false;
     }
@@ -134,6 +133,7 @@ int main(int argc, char const *argv[]){
     pM[3][3] = 0.0f;
 
     //draw triangles
+    
     for(int i=0;i<12; i++){
             
             //rotate in y axis
@@ -168,10 +168,15 @@ int main(int argc, char const *argv[]){
             pC[i][6]*=0.5f * (float)screenWidth;
             pC[i][7]*=0.5f * (float)screenHeight;
 
+            if(i==0){
+                cleardevice();
+                std::cout<<"cleared"<<std::endl;
+            }
+            
             drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
-    } 
     }
-    getch();
+    page = 1-page;
+    }
     closegraph();
     return 0;
 }
