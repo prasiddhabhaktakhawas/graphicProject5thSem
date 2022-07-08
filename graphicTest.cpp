@@ -209,11 +209,13 @@ int main(int argc, char const *argv[]){
 
                 //std::cout<<pC[i][0]<<" "<<pC[i][1]<<" "<<pC[i][3]<<" "<<pC[i][4]<<" "<<pC[i][6]<<" "<<pC[i][7]<<std::endl;
                 
+                
+                fillTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
                 drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
-                //fillTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
+                //std::cout<<"one triangle done .... "<<std::endl;
                 }
         }
-        page = 1-page;
+        page = 1-page;  //double buffer method
     }
     closegraph();
     return 0;
@@ -284,8 +286,10 @@ void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
     
     for(int i=ymin; i<=ymax; i++){
         for(int j=xmin; j<=xmax; j++){
+            //std::cout<<i<<" "<<j<<std::endl;
             if(isInside(x1,y1,x2,y2,x3,y3,j,i)){
-                putpixel(j,i, WHITE);
+                putpixel(j,i, RED);
+                //std::cout<<"inside"<<std::endl;
             }
         }
     }
@@ -306,7 +310,7 @@ bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float 
    
     float A3 = area (x1, y1, x2, y2, x, y);
      
-    if(A == A1 + A2 + A3)
+    if(A <= A1 + A2 + A3)   //this bug <= instead of == took a lot of time to figure out lol
         return true;
     else
         return false;
