@@ -95,11 +95,12 @@ int main(int argc, char const *argv[]){
     // end of 3d to 2d projection matrix
 
     int page = 0;
+    
     while(1){               //runs always
-    setactivepage(page);    // double buffer method
-    setvisualpage(1-page);                    
-    if((GetKeyState(VK_LBUTTON) & 0x8000) != 0){    //when left click is hold
-    GetCursorPos(&cursorPos);
+        setactivepage(page);    // double buffer method
+        setvisualpage(1-page);                    
+        if((GetKeyState(VK_LBUTTON) & 0x8000) != 0){    //when left click is hold
+            GetCursorPos(&cursorPos);
             if(leftButtonHold==false){
                 prevXM = cursorPos.x;
                 prevYM = cursorPos.y;
@@ -111,102 +112,108 @@ int main(int argc, char const *argv[]){
             fThetaY+=differenceX*0.01;
             prevXM= cursorPos.x;
             prevYM= cursorPos.y;
-    
-    // //rotation z
-    // matRotZ[0][0]=cosf(fTheta);
-    // matRotZ[0][1]=sinf(fTheta);
-    // matRotZ[1][0]=-sinf(fTheta);
-    // matRotZ[1][1]=cosf(fTheta);
-    // matRotZ[2][2]=1;
-    // matRotZ[3][3]=1;
-
-    //rotation y
-    matRotY[0][0]=cosf(fThetaY);
-    matRotY[0][2]=-sinf(fThetaY);
-    matRotY[1][1]=1;
-    matRotY[2][0]=sinf(fThetaY);
-    matRotY[2][2]=cosf(fThetaY);
-    matRotY[3][3]=1;
-
-    //Rotation x
-    matRotX[0][0]=1;
-    matRotX[1][1]=cosf(fThetaX);
-    matRotX[1][2]=sinf(fThetaX);
-    matRotX[2][1]=-sinf(fThetaX);
-    matRotX[2][2]=cosf(fThetaX);;
-    matRotX[3][3]=1;
-
-    cleardevice();
-    }else{
-            leftButtonHold=false;
-    }
-
-
-    //draw triangles
-    
-    for(int i=0;i<12; i++){
             
-            //rotate in y axis
-            MultiplyMatrixVector(cube[i],rCy[i],matRotY);
-            //rotate in x axis
-            MultiplyMatrixVector(rCy[i],rCx[i],matRotX);
-            //rotate in z axis
-            // MultiplyMatrixVector(rCz[i],rCy[i], matRotZ);
+            // //rotation z
+            // matRotZ[0][0]=cosf(fTheta);
+            // matRotZ[0][1]=sinf(fTheta);
+            // matRotZ[1][0]=-sinf(fTheta);
+            // matRotZ[1][1]=cosf(fTheta);
+            // matRotZ[2][2]=1;
+            // matRotZ[3][3]=1;
 
-            for(int i=0; i< 12; i++){
-                for(int j=0; j<9; j++){
-                    tC[i][j]=rCx[i][j];
+            //rotation y
+            matRotY[0][0]=cosf(fThetaY);
+            matRotY[0][2]=-sinf(fThetaY);
+            matRotY[1][1]=1;
+            matRotY[2][0]=sinf(fThetaY);
+            matRotY[2][2]=cosf(fThetaY);
+            matRotY[3][3]=1;
+
+            //Rotation x
+            matRotX[0][0]=1;
+            matRotX[1][1]=cosf(fThetaX);
+            matRotX[1][2]=sinf(fThetaX);
+            matRotX[2][1]=-sinf(fThetaX);
+            matRotX[2][2]=cosf(fThetaX);;
+            matRotX[3][3]=1;
+        }else{
+                leftButtonHold=false;
+        }
+
+        cleardevice();      //when clear device is inside the key press loop, then multiple border ficklering occurs, so, cleardevice should be outside so its being cleared every time
+        //draw triangles
+        
+        for(int i=0;i<12; i++){
+                //rotate in y axis
+                MultiplyMatrixVector(cube[i],rCy[i],matRotY);
+                //rotate in x axis
+                MultiplyMatrixVector(rCy[i],rCx[i],matRotX);
+                //rotate in z axis
+                // MultiplyMatrixVector(rCz[i],rCy[i], matRotZ);
+
+                for(int i=0; i< 12; i++){
+                    for(int j=0; j<9; j++){
+                        tC[i][j]=rCx[i][j];
+                    }
+                }   
+
+                // offset into the screen. translating z axis away from camera, otherwise, camera would be inside object
+                tC[i][2]=rCx[i][2] + 3.0f;
+                tC[i][5]=rCx[i][5] + 3.0f;
+                tC[i][8]=rCx[i][8] + 3.0f;
+
+                //std::cout<<rCx[i][2]<<" "<<rCx[i][5]<<" "<<rCx[i][8]<<" "<<std::endl;
+
+                //visible surface detection
+                float normal[3], line1[3], line2[3];
+
+                line1[0]= tC[i][3] - tC[i][0];
+                line1[1]= tC[i][4] - tC[i][1];
+                line1[2]= tC[i][5] - tC[i][2];
+
+                line2[0]= tC[i][6] - tC[i][0];
+                line2[1]= tC[i][7] - tC[i][1];
+                line2[2]= tC[i][8] - tC[i][2];
+                //cross products
+                normal[0] = line1[1] * line2[2] - line1[2]*line2[1];    
+                normal[1] = line1[2] * line2[0] - line1[0]*line2[2];
+                normal[2] = line1[0] * line2[1] - line1[1]*line2[0];
+
+                float l = sqrt(normal[0]*normal[0] + normal[1]*normal[1]+normal[2]*normal[2]);  
+                normal[0]/=l; normal[1]/=l; normal[2]/=l;   // unit vector of normal to surface
+
+                
+
+                // if(normal[2]<0){
+                if(normal[0]*(tC[i][0]-vCamera[0]) + normal[1]*(tC[i][1]-vCamera[1]) + normal[2]*(tC[i][2]-vCamera[2])<0.0){    //dot product of camera vector and normal vector of surface of cubes
+                //translated cube into projected cube by matrix multiplication with projection matrix
+                MultiplyMatrixVector(tC[i],pC[i],pM); 
+
+                // for(int k=0; k<9; k++){
+                //     std::cout<<tC[i][k]<<" ";
+                // }
+                // std::cout<<std::endl;
+
+                //scale into view wrt x and y
+                pC[i][0]+=1.0f;pC[i][1]+=1.0f;  //since -1.0 would go out of screen of left side, so +1.0 to bring it to 0, which is inside screen
+                pC[i][3]+=1.0f;pC[i][4]+=1.0f;
+                pC[i][6]+=1.0f;pC[i][7]+=1.0f;
+
+                //scaling it wrt to screen size         //we scale half the total length to make the object appear on center
+                pC[i][0]*=0.5f * (float)screenWidth;    //scaling in x direction is bigger because width is bigger than height, but it's cancelled out by aspect ratio( h/w), so at the end, it is just perfect
+                pC[i][1]*=0.5f * (float)screenHeight;
+                pC[i][3]*=0.5f * (float)screenWidth;    //
+                pC[i][4]*=0.5f * (float)screenHeight;   //
+                pC[i][6]*=0.5f * (float)screenWidth;
+                pC[i][7]*=0.5f * (float)screenHeight;   //
+
+                //std::cout<<pC[i][0]<<" "<<pC[i][1]<<" "<<pC[i][3]<<" "<<pC[i][4]<<" "<<pC[i][6]<<" "<<pC[i][7]<<std::endl;
+                
+                drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
+                //fillTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
                 }
-            }   
-
-            // offset into the screen. translating z axis away from camera, otherwise, camera would be inside object
-            tC[i][2]=rCx[i][2] + 3.0f;
-            tC[i][5]=rCx[i][5] + 3.0f;
-            tC[i][8]=rCx[i][8] + 3.0f;
-
-            //visible surface detection
-            float normal[3], line1[3], line2[3];
-
-            line1[0]= tC[i][3] - tC[i][0];
-            line1[1]= tC[i][4] - tC[i][1];
-            line1[2]= tC[i][5] - tC[i][2];
-
-            line2[0]= tC[i][6] - tC[i][0];
-            line2[1]= tC[i][7] - tC[i][1];
-            line2[2]= tC[i][8] - tC[i][2];
-            //cross products
-            normal[0] = line1[1] * line2[2] - line1[2]*line2[1];    
-            normal[1] = line1[2] * line2[0] - line1[0]*line2[2];
-            normal[2] = line1[0] * line2[1] - line1[1]*line2[0];
-
-            float l = sqrt(normal[0]*normal[0] + normal[1]*normal[1]+normal[2]*normal[2]);  
-            normal[0]/=l; normal[1]/=l; normal[2]/=l;   // unit vector of normal to surface
-
-            
-
-            // if(normal[2]<0){
-            if(normal[0]*(tC[i][0]-vCamera[0]) + normal[1]*(tC[i][1]-vCamera[1]) + normal[2]*(tC[i][2]-vCamera[2])<0.0){    //dot product of camera vector and normal vector of surface of cubes
-            //translated cube into projected cube by matrix multiplication with projection matrix
-            MultiplyMatrixVector(tC[i],pC[i],pM); 
-
-            //scale into view wrt x and y
-            pC[i][0]+=1.0f;pC[i][1]+=1.0f;  //since -1.0 would go out of screen of left side, so +1.0 to bring it to 0, which is inside screen
-            pC[i][3]+=1.0f;pC[i][4]+=1.0f;
-            pC[i][6]+=1.0f;pC[i][7]+=1.0f;
-
-            //scaling it wrt to screen size         //we scale half the total length to make the object appear on center
-            pC[i][0]*=0.5f * (float)screenWidth;    //scaling in x direction is bigger because width is bigger than height, but it's cancelled out by aspect ratio( h/w), so at the end, it is just perfect
-            pC[i][1]*=0.5f * (float)screenHeight;
-            pC[i][3]*=0.5f * (float)screenWidth;
-            pC[i][4]*=0.5f * (float)screenHeight;
-            pC[i][6]*=0.5f * (float)screenWidth;
-            pC[i][7]*=0.5f * (float)screenHeight;
-            
-            drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
-            fillTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
-            }
-    }
-    page = 1-page;
+        }
+        page = 1-page;
     }
     closegraph();
     return 0;
