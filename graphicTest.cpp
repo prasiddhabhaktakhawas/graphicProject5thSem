@@ -8,10 +8,13 @@ void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
 float area(float x1, float y1, float x2, float y2, float x3, float y3);
 bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float x, float y);
 void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
+void drawLine(float x1, float y1, float x2, float y2);
+
+DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 int main(int argc, char const *argv[]){
-    DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
-    DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    
     initwindow(screenWidth, screenHeight, "", -3, -3);
     // int gd = DETECT, gm;
     // initgraph(&gd,&gm, (char*)"");
@@ -51,8 +54,7 @@ int main(int argc, char const *argv[]){
     float vCamera[3] ={0};     //camera is at origin
     // fTheta+= 1.0f * clock();
     POINT cursorPos;    //mouse cursor position
-    // float xco = 0.0;
-    // float yco = 0.0;
+ 
     float prevXM;   //previous x position of mouse
     float prevYM;
     float differenceX;  //difference between current and previous x position of mouse
@@ -162,8 +164,6 @@ int main(int argc, char const *argv[]){
                 tC[i][5]=rCx[i][5] + 3.0f;
                 tC[i][8]=rCx[i][8] + 3.0f;
 
-                //std::cout<<rCx[i][2]<<" "<<rCx[i][5]<<" "<<rCx[i][8]<<" "<<std::endl;
-
                 //visible surface detection
                 float normal[3], line1[3], line2[3];
 
@@ -181,18 +181,11 @@ int main(int argc, char const *argv[]){
 
                 float l = sqrt(normal[0]*normal[0] + normal[1]*normal[1]+normal[2]*normal[2]);  
                 normal[0]/=l; normal[1]/=l; normal[2]/=l;   // unit vector of normal to surface
-
                 
-
                 // if(normal[2]<0){
                 if(normal[0]*(tC[i][0]-vCamera[0]) + normal[1]*(tC[i][1]-vCamera[1]) + normal[2]*(tC[i][2]-vCamera[2])<0.0){    //dot product of camera vector and normal vector of surface of cubes
                 //translated cube into projected cube by matrix multiplication with projection matrix
                 MultiplyMatrixVector(tC[i],pC[i],pM); 
-
-                // for(int k=0; k<9; k++){
-                //     std::cout<<tC[i][k]<<" ";
-                // }
-                // std::cout<<std::endl;
 
                 //scale into view wrt x and y
                 pC[i][0]+=1.0f;pC[i][1]+=1.0f;  //since -1.0 would go out of screen of left side, so +1.0 to bring it to 0, which is inside screen
@@ -207,12 +200,11 @@ int main(int argc, char const *argv[]){
                 pC[i][6]*=0.5f * (float)screenWidth;
                 pC[i][7]*=0.5f * (float)screenHeight;   //
 
-                //std::cout<<pC[i][0]<<" "<<pC[i][1]<<" "<<pC[i][3]<<" "<<pC[i][4]<<" "<<pC[i][6]<<" "<<pC[i][7]<<std::endl;
+               
                 
                 
-                fillTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
+                //fillTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
                 drawTriangle(pC[i][0], pC[i][1], pC[i][3],pC[i][4],pC[i][6],pC[i][7]);
-                //std::cout<<"one triangle done .... "<<std::endl;
                 }
         }
         page = 1-page;  //double buffer method
@@ -246,9 +238,35 @@ void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]){ //pa
 }
 
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
-    line(x1,y1,x2,y2);
-    line(x2,y2,x3,y3);
-    line(x3,y3,x1,y1);
+    drawLine(x1,y1,x2,y2);
+    drawLine(x2,y2,x3,y3);
+    drawLine(x3,y3,x1,y1);
+}
+
+void drawLine(float x1, float y1, float x2, float y2)
+{
+	 float k;
+     float dx=x2-x1;
+     float dy=y2-y1;
+ 
+     if(abs(dx)>=abs(dy))
+          k=abs(dx);
+     else
+        k=abs(dy);
+
+     float xinc=dx/k;
+     float yinc=dy/k;
+
+     float x=x1;
+     float y=y1;
+     putpixel(ceil(x),ceil(y),RED);
+
+     for(int i=1;i<k;i++)
+     {
+         x=x+xinc;
+         y=y+yinc;
+         putpixel(ceil(x),ceil(y),RED);
+     }
 }
 
 void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
@@ -286,11 +304,8 @@ void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
     
     for(int i=ymin; i<=ymax; i++){
         for(int j=xmin; j<=xmax; j++){
-            //std::cout<<i<<" "<<j<<std::endl;
-            if(isInside(x1,y1,x2,y2,x3,y3,j,i)){
+            if(isInside(x1,y1,x2,y2,x3,y3,j,i))
                 putpixel(j,i, RED);
-                //std::cout<<"inside"<<std::endl;
-            }
         }
     }
 }
@@ -310,8 +325,9 @@ bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float 
    
     float A3 = area (x1, y1, x2, y2, x, y);
      
-    if(A <= A1 + A2 + A3)   //this bug <= instead of == took a lot of time to figure out lol
+    if(A >= A1 + A2 + A3)   //this bug <= instead of == took a lot of time to figure out lol. LAMO, again mistake, it should be >=, but still some triangles are filled and some aren't properly
         return true;
     else
         return false;
 }
+
