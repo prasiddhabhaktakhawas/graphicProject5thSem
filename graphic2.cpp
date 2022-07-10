@@ -14,7 +14,7 @@ float area(float x1, float y1, float x2, float y2, float x3, float y3);
 bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float x, float y);
 void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
 void drawLine(int x1, int y1, int x2, int y2, int c);
-bool loadFromObj(string fileName);
+
 
 
 DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -249,25 +249,7 @@ void MultiplyMatrixVector(float (&i)[9], float (&o)[9] , float (&m)[4][4]){ //pa
     }
 }
 
-// bool loadFromObj(string fileName){
-//     ifstream f(fileName);
-//     if(!f.is_open())
-//         return false;
-//     vector<float> verts;
-//     while(!f.eof()){
-//         char line[128];
-//         f.getline(line, 128);
 
-//         strstream s;
-//         s<<line;
-        
-//         char junk;
-
-//         if(line[0] == 'v'){
-
-//         }
-//     }
-// }
 
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
     // drawLine(x1,y1,x2,y2,WHITE);

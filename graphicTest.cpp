@@ -3,6 +3,7 @@
 #include <windows.h>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include <strstream>
 #include <string>
 #include <vector>
@@ -37,6 +38,8 @@ float area(float x1, float y1, float x2, float y2, float x3, float y3);
 bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float x, float y);
 void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
 void drawLine(int x1, int y1, int x2, int y2, int c);
+bool loadFromObj(string fileName);
+mesh meshObj;
 
 int main(int argc, char const *argv[])
 {
@@ -44,6 +47,8 @@ int main(int argc, char const *argv[])
     initwindow(screenWidth, screenHeight, "", -3, -3);
     // int gd = DETECT, gm;
     // initgraph(&gd,&gm, (char*)"");
+
+    loadFromObj("VideoShip.obj");
 
     // float cube[12][9] = {
     //     //{x,y,z,x,y,z,x,y,z}
@@ -67,36 +72,36 @@ int main(int argc, char const *argv[])
     //     {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f}
     // };
 
-    mesh meshCube;
+    
     mat4x4 matProj, matRotX, matRotY, matRotZ;
 
-    meshCube.tris = {
-        //{x,y,z,x,y,z,x,y,z}
-        // SOUTH
-        {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+    // meshCube.tris = {
+    //     //{x,y,z,x,y,z,x,y,z}
+    //     // SOUTH
+    //     {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f},
+    //     {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
 
-        // EAST
-        {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},
-        {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f},
+    //     // EAST
+    //     {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},
+    //     {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f},
 
-        // NORTH
-        {1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f},
-        {1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f},
+    //     // NORTH
+    //     {1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f},
+    //     {1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f},
 
-        // WEST
-        {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f},
-        {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f},
+    //     // WEST
+    //     {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f},
+    //     {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f},
 
-        // TOP
-        {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-        {0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f},
+    //     // TOP
+    //     {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
+    //     {0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f},
 
-        // BOTTOM
-        {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f},
-        {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+    //     // BOTTOM
+    //     {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f},
+    //     {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f},
 
-    };
+    // };
 
     float fThetaX = 0.0; // angle of rotation
     float fThetaY = 0.0;
@@ -202,7 +207,9 @@ int main(int argc, char const *argv[])
         cleardevice(); // when clear device is inside the key press loop, then multiple border ficklering occurs, so, cleardevice should be outside so its being cleared every time
         // draw triangles
 
-        for (auto tri : meshCube.tris)
+        vector<triangle> vecTrianglesToRaster;
+
+        for (auto tri : meshObj.tris)
         {
             triangle triProjected, triTranslated, triRotatedX, triRotatedY, triRotatedZ;
             vec3d normal, line1, line2;
@@ -217,9 +224,9 @@ int main(int argc, char const *argv[])
 
             triTranslated = triRotatedX;
 
-            triTranslated.p[0].z = triRotatedX.p[0].z + 3.0f;
-            triTranslated.p[1].z = triRotatedX.p[1].z + 3.0f;
-            triTranslated.p[2].z = triRotatedX.p[2].z + 3.0f;
+            triTranslated.p[0].z = triRotatedX.p[0].z + 8.0f;
+            triTranslated.p[1].z = triRotatedX.p[1].z + 8.0f;
+            triTranslated.p[2].z = triRotatedX.p[2].z + 8.0f;
 
             line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
             line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
@@ -260,8 +267,27 @@ int main(int argc, char const *argv[])
                 triProjected.p[2].x *= 0.5f * (float)screenWidth;
                 triProjected.p[2].y *= 0.5f * (float)screenHeight;
 
-                drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
+                //drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
+
+                vecTrianglesToRaster.push_back(triProjected);
+
+                
             }
+            
+        }
+        //sort triangles from back to front
+        sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle &t1, triangle &t2){
+            float z1 = (t1.p[0].z +t1.p[1].z +t1.p[2].z)/3.0f;
+            float z2 = (t2.p[0].z +t2.p[1].z +t2.p[2].z)/3.0f;
+            return z1>z2;
+        });
+
+        for(auto &triProjected: vecTrianglesToRaster){
+            // setfillstyle(SOLID_FILL,RED);
+            drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
+            // float midX = (triProjected.p[0].x+triProjected.p[1].x+triProjected.p[2].x)/3.0f;
+            // float midY = (triProjected.p[0].y+triProjected.p[1].y+triProjected.p[2].y)/3.0f;
+            // floodfill(midX,midY,RED);
         }
         page = 1 - page; // double buffer method
     }
@@ -280,6 +306,34 @@ void MultiplyMatrixVector(vec3d &i, vec3d &o, mat4x4 &m)
         o.x /= w;
         o.y /= w;
         o.z /= w;
+    }
+}
+
+bool loadFromObj(string fileName){
+    ifstream f(fileName);
+    if(!f.is_open())
+        return false;
+    vector<vec3d> verts;
+    while(!f.eof()){
+        char line[128];
+        f.getline(line, 128);
+
+        strstream s;
+        s<<line;
+        
+        char junk;
+
+        if(line[0] == 'v'){
+            vec3d v;
+            s>>junk>>v.x>>v.y>>v.z;
+            verts.push_back(v);
+        }
+        if(line[0] == 'f'){
+            int f[3];
+            s>>junk>>f[0]>>f[1]>>f[2];
+            meshObj.tris.push_back({verts[f[0]-1], verts[f[1]-1], verts[f[2]-1]});
+            
+        }
     }
 }
 
