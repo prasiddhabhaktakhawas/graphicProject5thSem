@@ -245,8 +245,8 @@ int main(int argc, char const *argv[])
             normal.y /= l;
             normal.z /= l; // unit vector of normal to surface
 
-            if (normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0f)
-            {
+            // if (normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0f)
+            // {
 
                 MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], matProj);
                 MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], matProj);
@@ -272,7 +272,7 @@ int main(int argc, char const *argv[])
                 vecTrianglesToRaster.push_back(triProjected);
 
                 
-            }
+            // }
             
         }
         //sort triangles from back to front
