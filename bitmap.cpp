@@ -1,5 +1,6 @@
 #include "image.h"
 #include<vector>
+#include<iostream>
 #include <math.h>
 void drawLine(int x1, int y1, int x2, int y2, int c);
 void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
@@ -13,10 +14,11 @@ struct Co{
 std::vector<Co> locus;
 int main()
 {
-    
-    drawTriangle(100,100, 200, 200, 100, 200);
-    
-    image.Export("image.bmp");
+    for( int i = 0 ; i<100; i++){
+        drawTriangle(100+i,100, 200+i, 200, 100+i, 200);
+        image.Export("image.bmp");
+    }
+    std::cout<<"done"<<std::endl;
     return 0;
 }
 

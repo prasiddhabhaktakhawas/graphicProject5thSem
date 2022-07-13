@@ -49,29 +49,6 @@ int main(int argc, char const *argv[])
     // initgraph(&gd,&gm, (char*)"");
 
     loadFromObj("fiatUNOLowPoly.obj");
-
-    // float cube[12][9] = {
-    //     //{x,y,z,x,y,z,x,y,z}
-    //     //south
-    //     {0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f},
-    //     {0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
-    //     //east
-    //     {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f},
-    //     {1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f},
-    //     //north
-    //     {1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f},
-    //     {1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f},
-    //     //west
-    //     {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f},
-    //     {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f},
-    //     //top
-    //     {0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f},
-    //     {0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f},
-    //     //bottom
-    //     {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f},
-    //     {1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f}
-    // };
-
     
     mat4x4 matProj, matRotX, matRotY, matRotZ;
 
@@ -103,8 +80,9 @@ int main(int argc, char const *argv[])
 
     // };
 
-    float fThetaX = 0.0; // angle of rotation
-    float fThetaY = 0.0;
+    float fThetaX = 0.0f; // angle of rotation
+    float fThetaY = 0.0f;
+    float zoom=0.0f;
     // float fThetaZ = 0.0f;
     vec3d vCamera; // camera is at origin
     vCamera.x=0.0f;
@@ -158,7 +136,7 @@ int main(int argc, char const *argv[])
     {                        // runs always
         setactivepage(page); // double buffer method
         setvisualpage(1 - page);
-        if ((GetKeyState(VK_LBUTTON) & 0x8000) != 0)
+        if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
         { // when left click is hold
             GetCursorPos(&cursorPos);
             if (leftButtonHold == false)
@@ -203,6 +181,12 @@ int main(int argc, char const *argv[])
         {
             leftButtonHold = false;
         }
+        if((GetAsyncKeyState(0x5A) & 0x8000)!=0){
+            zoom--;
+            
+        }else if((GetAsyncKeyState(0x58) & 0x8000)!=0){
+            zoom++;    
+        }
 
         cleardevice(); // when clear device is inside the key press loop, then multiple border ficklering occurs, so, cleardevice should be outside so its being cleared every time
         // draw triangles
@@ -224,9 +208,9 @@ int main(int argc, char const *argv[])
 
             triTranslated = triRotatedX;
 
-            triTranslated.p[0].z = triRotatedX.p[0].z + 8.0f;
-            triTranslated.p[1].z = triRotatedX.p[1].z + 8.0f;
-            triTranslated.p[2].z = triRotatedX.p[2].z + 8.0f;
+            triTranslated.p[0].z = triRotatedX.p[0].z + 10.0f+zoom;
+            triTranslated.p[1].z = triRotatedX.p[1].z + 10.0f+zoom;
+            triTranslated.p[2].z = triRotatedX.p[2].z + 10.0f+zoom;
 
             line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
             line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
