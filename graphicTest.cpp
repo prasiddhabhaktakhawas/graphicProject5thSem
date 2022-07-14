@@ -48,7 +48,7 @@ int main(int argc, char const *argv[])
     // int gd = DETECT, gm;
     // initgraph(&gd,&gm, (char*)"");
 
-    loadFromObj("fiatUNOLowPoly.obj");
+    loadFromObj("bbb.obj");
     
     mat4x4 matProj, matRotX, matRotY, matRotZ;
 
@@ -181,10 +181,10 @@ int main(int argc, char const *argv[])
         {
             leftButtonHold = false;
         }
-        if((GetAsyncKeyState(0x5A) & 0x8000)!=0){
+        if((GetAsyncKeyState(0x5A) & 0x8000)!=0){   //z key pressed
             zoom--;
             
-        }else if((GetAsyncKeyState(0x58) & 0x8000)!=0){
+        }else if((GetAsyncKeyState(0x58) & 0x8000)!=0){ //x key pressed
             zoom++;    
         }
 
@@ -208,9 +208,9 @@ int main(int argc, char const *argv[])
 
             triTranslated = triRotatedX;
 
-            triTranslated.p[0].z = triRotatedX.p[0].z + 10.0f+zoom;
-            triTranslated.p[1].z = triRotatedX.p[1].z + 10.0f+zoom;
-            triTranslated.p[2].z = triRotatedX.p[2].z + 10.0f+zoom;
+            triTranslated.p[0].z = triRotatedX.p[0].z + 100.0f+zoom;
+            triTranslated.p[1].z = triRotatedX.p[1].z + 100.0f+zoom;
+            triTranslated.p[2].z = triRotatedX.p[2].z + 100.0f+zoom;
 
             line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
             line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
