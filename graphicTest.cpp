@@ -41,7 +41,7 @@ void drawLine(int x1, int y1, int x2, int y2, int c);
 bool loadFromObj(string fileName);
 mesh meshObj;
 
-int main(int argc, char const *argv[])
+int main()
 {
 
     initwindow(screenWidth, screenHeight, "", -3, -3);
@@ -174,7 +174,6 @@ int main(int argc, char const *argv[])
             matRotX.m[1][2] = sinf(fThetaX);
             matRotX.m[2][1] = -sinf(fThetaX);
             matRotX.m[2][2] = cosf(fThetaX);
-            ;
             matRotX.m[3][3] = 1;
         }
         else
