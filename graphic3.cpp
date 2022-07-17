@@ -12,7 +12,10 @@ using namespace std;
 
 struct vec3d
 {
-    float x, y, z;
+    float x=0;
+    float y=0; 
+    float z=0;
+    float w=1;
 };
 
 struct triangle
@@ -25,41 +28,41 @@ struct mesh
     vector<triangle> tris;
 
     bool LoadFromObject(string sFilename)
-	{
-		ifstream f(sFilename);
-		if (!f.is_open())
-			return false;
+    {
+        ifstream f(sFilename);
+        if (!f.is_open())
+            return false;
 
-		// Local cache of verts
-		vector<vec3d> verts;
+        // Local cache of verts
+        vector<vec3d> verts;
 
-		while (!f.eof())
-		{
-			char line[128];
-			f.getline(line, 128);
+        while (!f.eof())
+        {
+            char line[128];
+            f.getline(line, 128);
 
-			strstream s;
-			s << line;
+            strstream s;
+            s << line;
 
-			char junk;
+            char junk;
 
-			if (line[0] == 'v')
-			{
-				vec3d v;
-				s >> junk >> v.x >> v.y >> v.z;
-				verts.push_back(v);
-			}
+            if (line[0] == 'v')
+            {
+                vec3d v;
+                s >> junk >> v.x >> v.y >> v.z;
+                verts.push_back(v);
+            }
 
-			if (line[0] == 'f')
-			{
-				int f[3];
-				s >> junk >> f[0] >> f[1] >> f[2];
-				tris.push_back({ verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1] });
-			}
-		}
+            if (line[0] == 'f')
+            {
+                int f[3];
+                s >> junk >> f[0] >> f[1] >> f[2];
+                tris.push_back({verts[f[0] - 1], verts[f[1] - 1], verts[f[2] - 1]});
+            }
+        }
 
-		return true;
-	}
+        return true;
+    }
 };
 
 struct mat4x4
@@ -67,247 +70,345 @@ struct mat4x4
     float m[4][4] = {0};
 };
 
-class renderer{
-    private:
-        DWORD screenWidth;
-        DWORD screenHeight;
-        string objName;
-        mat4x4 matProj, matRotX, matRotY, matRotZ;
-        mesh meshObj;
-        vec3d vCamera;
-        POINT cursorPos;
-        float fThetaX = 0.0f; // angle of rotation
-        float fThetaY = 0.0f;
-        float zoom=0.0f;
-        int page = 0;
+class renderer
+{
+private:
+    DWORD screenWidth;
+    DWORD screenHeight;
+    string objName;
+    mat4x4 matProj, matRotX, matRotY;
+    mesh meshObj;
+    vec3d vCamera;
+    POINT cursorPos;
+    float fThetaX = 0.0f; // angle of rotation
+    float fThetaY = 0.0f;
+    float zoom = 0.0f;
+    int page = 0;
 
-        float fNear = 0.1f;                                            // near plane
-        float fFar = 1000.0f;                                          // far plane
-        float fFov = 90.0f;                                            // field of view
-        float fAspectRatio;
-        float fFovRad = 1.0f / tanf(fFov * 0.5f / 180.0f * 3.14159f);
+    float prevXM; // previous x position of mouse
+    float prevYM;
+    float differenceX; // difference between current and previous x position of mouse
+    float differenceY;
+    bool leftButtonHold = false;
 
-        float prevXM; // previous x position of mouse
-        float prevYM;
-        float differenceX; // difference between current and previous x position of mouse
-        float differenceY;
-        bool leftButtonHold = false;
-    public:
-        //constructor
-        renderer(string objName, DWORD screenWidth, DWORD screenHeight, int xOffset, int yOffset){
-            initwindow(screenWidth, screenHeight, "", -3, -3);
-            this->objName = objName;
-            this->screenWidth = screenWidth;
-            this->screenHeight = screenHeight;
-            
-            fAspectRatio = (float)screenHeight / (float)screenWidth;
-            meshObj.LoadFromObject(objName);
+public:
+    // constructor
+    renderer(string objName, DWORD screenWidth, DWORD screenHeight, int xOffset, int yOffset)
+    {
+        initwindow(screenWidth, screenHeight, "", -3, -3);
+        this->objName = objName;
+        this->screenWidth = screenWidth;
+        this->screenHeight = screenHeight;
 
-            vCamera.x=0.0f;
-            vCamera.y=0.0f;
-            vCamera.z=0.0f;
+        // Projection Matrix
+        matProj = Matrix_MakeProjection(90.0f, (float)screenHeight / (float)screenWidth, 0.1f, 1000.0f);
 
-            // rotation y
-            matRotY.m[0][0] = cosf(fThetaY);
-            matRotY.m[0][2] = -sinf(fThetaY);
-            matRotY.m[1][1] = 1;
-            matRotY.m[2][0] = sinf(fThetaY);
-            matRotY.m[2][2] = cosf(fThetaY);
-            matRotY.m[3][3] = 1;
+        meshObj.LoadFromObject(objName);
 
-            // Rotation x
-            matRotX.m[0][0] = 1;
-            matRotX.m[1][1] = cosf(fThetaX);
-            matRotX.m[1][2] = sinf(fThetaX);
-            matRotX.m[2][1] = -sinf(fThetaX);
-            matRotX.m[2][2] = cosf(fThetaX);
-            matRotX.m[3][3] = 1;
+        vCamera.x = 0.0f;
+        vCamera.y = 0.0f;
+        vCamera.z = 0.0f;
 
-            matProj.m[0][0] = fAspectRatio * fFovRad;
-            matProj.m[1][1] = fFovRad;
-            matProj.m[2][2] = fFar / (fFar - fNear);
-            matProj.m[3][2] = (-fFar * fNear) / (fFar - fNear);
-            matProj.m[2][3] = 1.0f;
-            matProj.m[3][3] = 0.0f;
-        }
-        void mainLoop(){
-           
-            setactivepage(page); // double buffer method
-            setvisualpage(1 - page);
-            if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
-            { // when left click is hold
-                GetCursorPos(&cursorPos);
-                if (leftButtonHold == false)
-                {
-                    prevXM = cursorPos.x;
-                    prevYM = cursorPos.y;
-                    leftButtonHold = true;
-                }
-                differenceX = prevXM - cursorPos.x;
-                differenceY = prevYM - cursorPos.y;
-                fThetaX -= differenceY * 0.01; // dragging mouse in y direction give means rotating wrt to x axis and -ve for invertmouseY just like in videogames
-                fThetaY += differenceX * 0.01;
+        // rotation y
+        matRotY = Matrix_MakeRotationY(fThetaY);
+        // rotation x
+        matRotX = Matrix_MakeRotationX(fThetaX);
+    }
+    void mainLoop()
+    {
+
+        setactivepage(page); // double buffer method
+        setvisualpage(1 - page);
+        if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
+        { // when left click is hold
+            GetCursorPos(&cursorPos);
+            if (leftButtonHold == false)
+            {
                 prevXM = cursorPos.x;
                 prevYM = cursorPos.y;
-
-                // //rotation z
-                // matRotZ[0][0]=cosf(fTheta);
-                // matRotZ[0][1]=sinf(fTheta);
-                // matRotZ[1][0]=-sinf(fTheta);
-                // matRotZ[1][1]=cosf(fTheta);
-                // matRotZ[2][2]=1;
-                // matRotZ[3][3]=1;
-
-                // rotation y
-                matRotY.m[0][0] = cosf(fThetaY);
-                matRotY.m[0][2] = -sinf(fThetaY);
-                matRotY.m[1][1] = 1;
-                matRotY.m[2][0] = sinf(fThetaY);
-                matRotY.m[2][2] = cosf(fThetaY);
-                matRotY.m[3][3] = 1;
-
-                // Rotation x
-                matRotX.m[0][0] = 1;
-                matRotX.m[1][1] = cosf(fThetaX);
-                matRotX.m[1][2] = sinf(fThetaX);
-                matRotX.m[2][1] = -sinf(fThetaX);
-                matRotX.m[2][2] = cosf(fThetaX);
-                ;
-                matRotX.m[3][3] = 1;
+                leftButtonHold = true;
             }
-            else
-            {
-                leftButtonHold = false;
-            }
-            if((GetAsyncKeyState(0x5A) & 0x8000)!=0){   //z key pressed
-                zoom--;
-                
-            }else if((GetAsyncKeyState(0x58) & 0x8000)!=0){ //x key pressed
-                zoom++;    
-            }
+            differenceX = prevXM - cursorPos.x;
+            differenceY = prevYM - cursorPos.y;
+            fThetaX -= differenceY * 0.01; // dragging mouse in y direction give means rotating wrt to x axis and -ve for invertmouseY just like in videogames
+            fThetaY += differenceX * 0.01;
+            prevXM = cursorPos.x;
+            prevYM = cursorPos.y;
 
-            cleardevice(); // when clear device is inside the key press loop, then multiple border ficklering occurs, so, cleardevice should be outside so its being cleared every time
-            // draw triangles
+            // rotation y
+            matRotY = Matrix_MakeRotationY(fThetaY);
+            // rotation x
+            matRotX = Matrix_MakeRotationX(fThetaX);
+        }
+        else
+        {
+            leftButtonHold = false;
+        }
+        if ((GetAsyncKeyState(0x5A) & 0x8000) != 0)
+        { // z key pressed
+            zoom--;
+        }
+        else if ((GetAsyncKeyState(0x58) & 0x8000) != 0)
+        { // x key pressed
+            zoom++;
+        }
 
-            vector<triangle> vecTrianglesToRaster;
+        cleardevice(); // when clear device is inside the key press loop, then multiple border ficklering occurs, so, cleardevice should be outside so its being cleared every time
+        // draw triangles
 
-            for (auto tri : meshObj.tris)
-            {
-                triangle triProjected, triTranslated, triRotatedX, triRotatedY, triRotatedZ;
-                vec3d normal, line1, line2;
+        vector<triangle> vecTrianglesToRaster;
 
-                MultiplyMatrixVector(tri.p[0], triRotatedY.p[0], matRotY); // tri.p[0] is a vertex
-                MultiplyMatrixVector(tri.p[1], triRotatedY.p[1], matRotY);
-                MultiplyMatrixVector(tri.p[2], triRotatedY.p[2], matRotY);
+        mat4x4 matTrans;
+        matTrans = Matrix_MakeTranslation(0.0f, 0.0f, 5.0f);
 
-                MultiplyMatrixVector(triRotatedY.p[0], triRotatedX.p[0], matRotX);
-                MultiplyMatrixVector(triRotatedY.p[1], triRotatedX.p[1], matRotX);
-                MultiplyMatrixVector(triRotatedY.p[2], triRotatedX.p[2], matRotX);
+        mat4x4 matWorld;
+        matWorld = Matrix_MakeIdentity();                     // Form World Matrix
+        matWorld = Matrix_MultiplyMatrix(matRotY, matRotX);   // Transform by rotation
+        matWorld = Matrix_MultiplyMatrix(matWorld, matTrans); // Transform by translation
 
-                triTranslated = triRotatedX;
+        for (auto tri : meshObj.tris)
+        {
+            triangle triProjected, triTransformed;
+            vec3d normal, line1, line2;
 
-                triTranslated.p[0].z = triRotatedX.p[0].z + 20.0f+zoom;
-                triTranslated.p[1].z = triRotatedX.p[1].z + 20.0f+zoom;
-                triTranslated.p[2].z = triRotatedX.p[2].z + 20.0f+zoom;
+            triTransformed.p[0] = Matrix_MultiplyVector(matWorld, tri.p[0]);
+            triTransformed.p[1] = Matrix_MultiplyVector(matWorld, tri.p[1]);
+            triTransformed.p[2] = Matrix_MultiplyVector(matWorld, tri.p[2]);
 
-                line1.x = triTranslated.p[1].x - triTranslated.p[0].x;
-                line1.y = triTranslated.p[1].y - triTranslated.p[0].y;
-                line1.z = triTranslated.p[1].z - triTranslated.p[0].z;
+            // Get lines either side of triangle
+            line1 = Vector_Sub(triTransformed.p[1], triTransformed.p[0]);
+            line2 = Vector_Sub(triTransformed.p[2], triTransformed.p[0]);
 
-                line2.x = triTranslated.p[2].x - triTranslated.p[0].x;
-                line2.y = triTranslated.p[2].y - triTranslated.p[0].y;
-                line2.z = triTranslated.p[2].z - triTranslated.p[0].z;
-                // cross products
-                normal.x = line1.y * line2.z - line1.z * line2.y;
-                normal.y = line1.z * line2.x - line1.x * line2.z;
-                normal.z = line1.x * line2.y - line1.y * line2.x;
+            // Take cross product of lines to get normal to triangle surface
+            normal = Vector_CrossProduct(line1, line2);
 
-                float l = sqrtf(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z);
-                normal.x /= l;
-                normal.y /= l;
-                normal.z /= l; // unit vector of normal to surface
+            // You normally need to normalise a normal!
+            normal = Vector_Normalise(normal);
 
-                // if (normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0f)
-                // {
+            // Get Ray from triangle to camera
+            vec3d vCameraRay = Vector_Sub(triTransformed.p[0], vCamera);
 
-                    MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], matProj);
-                    MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], matProj);
-                    MultiplyMatrixVector(triTranslated.p[2], triProjected.p[2], matProj);
+            // if (Vector_DotProduct(normal, vCameraRay) < 0.0f)
+            // {
+                // Project triangles from 3D --> 2D
+                triProjected.p[0] = Matrix_MultiplyVector(matProj, triTransformed.p[0]);
+                triProjected.p[1] = Matrix_MultiplyVector(matProj, triTransformed.p[1]);
+                triProjected.p[2] = Matrix_MultiplyVector(matProj, triTransformed.p[2]);
 
-                    triProjected.p[0].x += 1.0f;
-                    triProjected.p[0].y += 1.0f; // since -1.0 would go out of screen of left side, so +1.0 to bring it to 0, which is inside screen
-                    triProjected.p[1].x += 1.0f;
-                    triProjected.p[1].y += 1.0f;
-                    triProjected.p[2].x += 1.0f;
-                    triProjected.p[2].y += 1.0f;
+                // Scale into view, we moved the normalising into cartesian space
+				// out of the matrix.vector function from the previous videos, so
+				// do this manually
+                triProjected.p[0] = Vector_Div(triProjected.p[0], triProjected.p[0].w);
+				triProjected.p[1] = Vector_Div(triProjected.p[1], triProjected.p[1].w);
+				triProjected.p[2] = Vector_Div(triProjected.p[2], triProjected.p[2].w);
 
-                    // scaling it wrt to screen size         //we scale half the total length to make the object appear on center
-                    triProjected.p[0].x *= 0.5f * (float)screenWidth; // scaling in x direction is bigger because width is bigger than height, but it's cancelled out by aspect ratio( h/w), so at the end, it is just perfect
-                    triProjected.p[0].y *= 0.5f * (float)screenHeight;
-                    triProjected.p[1].x *= 0.5f * (float)screenWidth;  //
-                    triProjected.p[1].y *= 0.5f * (float)screenHeight; //
-                    triProjected.p[2].x *= 0.5f * (float)screenWidth;
-                    triProjected.p[2].y *= 0.5f * (float)screenHeight;
+                vec3d vOffsetView = { 1,1,0 };
+				triProjected.p[0] = Vector_Add(triProjected.p[0], vOffsetView);
+				triProjected.p[1] = Vector_Add(triProjected.p[1], vOffsetView);
+				triProjected.p[2] = Vector_Add(triProjected.p[2], vOffsetView);
 
-                    //drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
+                // scaling it wrt to screen size         //we scale half the total length to make the object appear on center
+                triProjected.p[0].x *= 0.5f * (float)screenWidth; // scaling in x direction is bigger because width is bigger than height, but it's cancelled out by aspect ratio( h/w), so at the end, it is just perfect
+                triProjected.p[0].y *= 0.5f * (float)screenHeight;
+                triProjected.p[1].x *= 0.5f * (float)screenWidth;  //
+                triProjected.p[1].y *= 0.5f * (float)screenHeight; //
+                triProjected.p[2].x *= 0.5f * (float)screenWidth;
+                triProjected.p[2].y *= 0.5f * (float)screenHeight;
 
-                    vecTrianglesToRaster.push_back(triProjected);
+                // drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
 
-                    
-                // }
-                
-            }
-            //sort triangles from back to front
-            sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle &t1, triangle &t2){
+                vecTrianglesToRaster.push_back(triProjected);
+            //}
+        }
+        // sort triangles from back to front
+        sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle &t1, triangle &t2)
+             {
                 float z1 = (t1.p[0].z +t1.p[1].z +t1.p[2].z)/3.0f;
                 float z2 = (t2.p[0].z +t2.p[1].z +t2.p[2].z)/3.0f;
-                return z1>z2;
-            });
+                return z1>z2; });
 
-            for(auto &triProjected: vecTrianglesToRaster){
-                // setfillstyle(SOLID_FILL,RED);
-                drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
-                // float midX = (triProjected.p[0].x+triProjected.p[1].x+triProjected.p[2].x)/3.0f;
-                // float midY = (triProjected.p[0].y+triProjected.p[1].y+triProjected.p[2].y)/3.0f;
-                // floodfill(midX,midY,RED);
-            }
-            page = 1 - page; // double buffer method
-
-        }
-    
-
-    private:    
-        void MultiplyMatrixVector(vec3d &i, vec3d &o, mat4x4 &m)
-        { // pass by reference
-            o.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
-            o.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
-            o.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
-            float w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
-            if (w != 0.0f)
-            {
-                o.x /= w;
-                o.y /= w;
-                o.z /= w;
-            }
-        }
-        void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3)
+        for (auto &triProjected : vecTrianglesToRaster)
         {
-            // drawLine(x1,y1,x2,y2,WHITE);
-            // drawLine(x2,y2,x3,y3,WHITE);
-            // drawLine(x3,y3,x1,y1,WHITE);
-            line(x1, y1, x2, y2); // inbuilt line of graphics.h seems to perform better than custom built
-            line(x2, y2, x3, y3);
-            line(x3, y3, x1, y1);
+            // setfillstyle(SOLID_FILL,RED);
+            drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
+            // float midX = (triProjected.p[0].x+triProjected.p[1].x+triProjected.p[2].x)/3.0f;
+            // float midY = (triProjected.p[0].y+triProjected.p[1].y+triProjected.p[2].y)/3.0f;
+            // floodfill(midX,midY,RED);
         }
+        page = 1 - page; // double buffer method
+    }
+
+private:
+    vec3d Vector_Add(vec3d &v1, vec3d &v2)
+    {
+        return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
+    }
+
+    vec3d Vector_Sub(vec3d &v1, vec3d &v2)
+    {
+        return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
+    }
+
+    vec3d Vector_Mul(vec3d &v1, float k)
+    {
+        return {v1.x * k, v1.y * k, v1.z * k};
+    }
+
+    vec3d Vector_Div(vec3d &v1, float k)
+    {
+        return {v1.x / k, v1.y / k, v1.z / k};
+    }
+
+    float Vector_DotProduct(vec3d &v1, vec3d &v2)
+    {
+        return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
+    }
+
+    float Vector_Length(vec3d &v)
+	{
+		return sqrtf(Vector_DotProduct(v, v));
+	}
+
+    vec3d Vector_Normalise(vec3d &v)
+    {
+        float l = Vector_Length(v);
+        return {v.x / l, v.y / l, v.z / l};
+    }
+
+    vec3d Vector_CrossProduct(vec3d &v1, vec3d &v2)
+    {
+        vec3d v;
+        v.x = v1.y * v2.z - v1.z * v2.y;
+        v.y = v1.z * v2.x - v1.x * v2.z;
+        v.z = v1.x * v2.y - v1.y * v2.x;
+        return v;
+    }
+
+    vec3d Matrix_MultiplyVector(mat4x4 &m, vec3d &i)
+    {
+        vec3d v;
+        v.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + i.w * m.m[3][0];
+        v.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + i.w * m.m[3][1];
+        v.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + i.w * m.m[3][2];
+        v.w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + i.w * m.m[3][3];
+        return v;
+    }
+
+    void MultiplyMatrixVector(vec3d &i, vec3d &o, mat4x4 &m)
+    { // pass by reference
+        o.x = i.x * m.m[0][0] + i.y * m.m[1][0] + i.z * m.m[2][0] + m.m[3][0];
+        o.y = i.x * m.m[0][1] + i.y * m.m[1][1] + i.z * m.m[2][1] + m.m[3][1];
+        o.z = i.x * m.m[0][2] + i.y * m.m[1][2] + i.z * m.m[2][2] + m.m[3][2];
+        float w = i.x * m.m[0][3] + i.y * m.m[1][3] + i.z * m.m[2][3] + m.m[3][3];
+        if (w != 0.0f)
+        {
+            o.x /= w;
+            o.y /= w;
+            o.z /= w;
+        }
+    }
+
+    mat4x4 Matrix_MakeIdentity()
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = 1.0f;
+        matrix.m[1][1] = 1.0f;
+        matrix.m[2][2] = 1.0f;
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeRotationX(float fAngleRad)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = 1.0f;
+        matrix.m[1][1] = cosf(fAngleRad);
+        matrix.m[1][2] = sinf(fAngleRad);
+        matrix.m[2][1] = -sinf(fAngleRad);
+        matrix.m[2][2] = cosf(fAngleRad);
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeRotationY(float fAngleRad)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = cosf(fAngleRad);
+        matrix.m[0][2] = sinf(fAngleRad);
+        matrix.m[2][0] = -sinf(fAngleRad);
+        matrix.m[1][1] = 1.0f;
+        matrix.m[2][2] = cosf(fAngleRad);
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeRotationZ(float fAngleRad)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = cosf(fAngleRad);
+        matrix.m[0][1] = sinf(fAngleRad);
+        matrix.m[1][0] = -sinf(fAngleRad);
+        matrix.m[1][1] = cosf(fAngleRad);
+        matrix.m[2][2] = 1.0f;
+        matrix.m[3][3] = 1.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeTranslation(float x, float y, float z)
+    {
+        mat4x4 matrix;
+        matrix.m[0][0] = 1.0f;
+        matrix.m[1][1] = 1.0f;
+        matrix.m[2][2] = 1.0f;
+        matrix.m[3][3] = 1.0f;
+        matrix.m[3][0] = x;
+        matrix.m[3][1] = y;
+        matrix.m[3][2] = z;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MakeProjection(float fFovDegrees, float fAspectRatio, float fNear, float fFar)
+    {
+        float fFovRad = 1.0f / tanf(fFovDegrees * 0.5f / 180.0f * 3.14159f);
+        mat4x4 matrix;
+        matrix.m[0][0] = fAspectRatio * fFovRad;
+        matrix.m[1][1] = fFovRad;
+        matrix.m[2][2] = fFar / (fFar - fNear);
+        matrix.m[3][2] = (-fFar * fNear) / (fFar - fNear);
+        matrix.m[2][3] = 1.0f;
+        matrix.m[3][3] = 0.0f;
+        return matrix;
+    }
+
+    mat4x4 Matrix_MultiplyMatrix(mat4x4 &m1, mat4x4 &m2)
+    {
+        mat4x4 matrix;
+        for (int c = 0; c < 4; c++)
+            for (int r = 0; r < 4; r++)
+                matrix.m[r][c] = m1.m[r][0] * m2.m[0][c] + m1.m[r][1] * m2.m[1][c] + m1.m[r][2] * m2.m[2][c] + m1.m[r][3] * m2.m[3][c];
+        return matrix;
+    }
+
+    void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3)
+    {
+        // drawLine(x1,y1,x2,y2,WHITE);
+        // drawLine(x2,y2,x3,y3,WHITE);
+        // drawLine(x3,y3,x1,y1,WHITE);
+        line(x1, y1, x2, y2); // inbuilt line of graphics.h seems to perform better than custom built
+        line(x2, y2, x3, y3);
+        line(x3, y3, x1, y1);
+    }
 };
 
-int main(){
-        DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
-        DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
-        renderer car("fiatUNOLowPoly.obj", screenWidth, screenHeight, -3,-3 );
-        
-        while(1){
-            car.mainLoop();
-        }
+int main()
+{
+    DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
+    renderer car("fiatUNOLowPoly.obj", screenWidth, screenHeight, -3, -3);
+
+    while (1)
+    {
+        car.mainLoop();
+    }
     return 0;
 }
