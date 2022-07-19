@@ -83,10 +83,13 @@ private:
     vec3d vCamera;
     POINT cursorPos;
     float fYaw = 0.0f;
+    float fZaw = 0.0f;
+    float fXaw = 0.0f;
     float fThetaX = 0.0f; // angle of rotation
     float fThetaY = 0.0f;
     float zoom = 0.0f;
     int page = 0;
+    mat4x4 matCameraRot;
 
     float prevXM; // previous x position of mouse
     float prevYM;
@@ -112,23 +115,35 @@ public:
         vCamera.y = 0.0f;
         vCamera.z = 0.0f;
 
+        //without this, nothing will appear on screen at first
+        matCameraRot = Matrix_MakeRotationY(fYaw); 
         // rotation y
         matRotY = Matrix_MakeRotationY(fYaw);
         // rotation x
-        matRotX = Matrix_MakeRotationX(fYaw);
+        matRotX = Matrix_MakeRotationX(fXaw);
     }
     void mainLoop()
     {
 
         setactivepage(page); // double buffer method
         setvisualpage(1 - page);
+        // if ((GetAsyncKeyState(0x28) & 0x8000) != 0) // down key held
+        // {
+        //     vCamera.y += 1.0f;
+        // }
+        // if ((GetAsyncKeyState(0x26) & 0x8000) != 0) // up key held
+        // {
+        //     vCamera.y -= 1.0f;
+        // }
         if ((GetAsyncKeyState(0x28) & 0x8000) != 0) // down key held
         {
-            vCamera.y += 1.0f;
+            fXaw -= 0.05f;
+            
         }
         if ((GetAsyncKeyState(0x26) & 0x8000) != 0) // up key held
         {
-            vCamera.y -= 1.0f;
+            fXaw += 0.05f;
+          
         }
         if ((GetAsyncKeyState(0x44) & 0x8000) != 0) // d key held
         {
@@ -139,7 +154,7 @@ public:
             vCamera.x -= 1.0f;
         }
 
-        vec3d vForward = Vector_Mul(vLookDir, 1.0f);
+        vec3d vForward = Vector_Mul(vLookDir, 0.5f);
 
         if ((GetAsyncKeyState(0x57) & 0x8000) != 0) // w key held
         {
@@ -151,12 +166,15 @@ public:
         }
 
         if ((GetAsyncKeyState(0x27) & 0x8000) != 0) // right key held
-        {
+        {   
             fYaw -= 0.05f;
+            
         }
         if ((GetAsyncKeyState(0x25) & 0x8000) != 0) // left key held
         {
             fYaw += 0.05f;
+            
+
         }
         // if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
         // { // when left click is hold
@@ -196,7 +214,7 @@ public:
         // draw triangles
 
         vector<triangle> vecTrianglesToRaster;
-
+        // maybe for initial condition
         mat4x4 matTrans;
         matTrans = Matrix_MakeTranslation(0.0f, 0.0f, 5.0f);
 
@@ -204,14 +222,22 @@ public:
         matWorld = Matrix_MakeIdentity();                     // Form World Matrix
         matWorld = Matrix_MultiplyMatrix(matRotY, matRotX);   // Transform by rotation
         matWorld = Matrix_MultiplyMatrix(matWorld, matTrans); // Transform by translation
+        //maybe for initial condition //ends
 
         // vec3d vLookDir = {0,0,1};
-        vec3d vUp = {0, 1, 0};
+        
         // vec3d vTarget = Vector_Add(vCamera, vLookDir);
+        vec3d vUp = {0, 1, 0};
         vec3d vTarget = {0, 0, 1};
-        mat4x4 matCameraRot = Matrix_MakeRotationY(fYaw);
+          
+        matCameraRot = Matrix_Adder(Matrix_MakeRotationY(fYaw), Matrix_MakeRotationX(fXaw)); 
         vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
         vTarget = Vector_Add(vCamera, vLookDir);
+
+        // matCameraRot = Matrix_MakeRotationX(fXaw);
+        // vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
+        // vTarget = Vector_Add(vCamera, vLookDir);
+
 
         mat4x4 matCamera = Matrix_PointAt(vCamera, vTarget, vUp);
 
@@ -430,6 +456,16 @@ private:
         matrix.m[2][2] = 1.0f;
         matrix.m[3][3] = 1.0f;
         return matrix;
+    }
+
+    mat4x4 Matrix_Adder(mat4x4 mat1, mat4x4 mat2){
+        mat4x4 mat3;
+        for(int i=0; i<4; i++){
+            for( int j = 0; j<4; j++){
+                mat3.m[i][j] = mat1.m[i][j] +mat2.m[i][j];
+            }
+        }
+        return mat3;
     }
 
     mat4x4 Matrix_MakeRotationX(float fAngleRad)
