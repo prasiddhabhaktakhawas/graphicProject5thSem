@@ -48,7 +48,7 @@ int main()
     // int gd = DETECT, gm;
     // initgraph(&gd,&gm, (char*)"");
 
-    loadFromObj("fiatUNOLowPoly.obj");
+    loadFromObj("houseLowPoly.obj");
     // s
     mat4x4 matProj, matRotX, matRotY, matRotZ;
 

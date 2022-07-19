@@ -78,8 +78,10 @@ private:
     string objName;
     mat4x4 matProj, matRotX, matRotY;
     mesh meshObj;
+    vec3d vLookDir;
     vec3d vCamera;
     POINT cursorPos;
+    float fYaw=0.0f;
     float fThetaX = 0.0f; // angle of rotation
     float fThetaY = 0.0f;
     float zoom = 0.0f;
@@ -110,48 +112,84 @@ public:
         vCamera.z = 0.0f;
 
         // rotation y
-        matRotY = Matrix_MakeRotationY(fThetaY);
+        matRotY = Matrix_MakeRotationY(fYaw);
         // rotation x
-        matRotX = Matrix_MakeRotationX(fThetaX);
+        matRotX = Matrix_MakeRotationX(fYaw);
     }
     void mainLoop()
     {
 
         setactivepage(page); // double buffer method
         setvisualpage(1 - page);
-        if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
-        { // when left click is hold
-            GetCursorPos(&cursorPos);
-            if (leftButtonHold == false)
-            {
-                prevXM = cursorPos.x;
-                prevYM = cursorPos.y;
-                leftButtonHold = true;
-            }
-            differenceX = prevXM - cursorPos.x;
-            differenceY = prevYM - cursorPos.y;
-            fThetaX -= differenceY * 0.01; // dragging mouse in y direction give means rotating wrt to x axis and -ve for invertmouseY just like in videogames
-            fThetaY += differenceX * 0.01;
-            prevXM = cursorPos.x;
-            prevYM = cursorPos.y;
+        if ((GetAsyncKeyState(0x26) & 0x8000) != 0) // up key held
+        { 
+            vCamera.y += 1.0f;
+        }
+        if ((GetAsyncKeyState(0x28) & 0x8000) != 0) // down key held
+        { 
+            vCamera.y -= 1.0f;
+        }
+        if ((GetAsyncKeyState(0x41) & 0x8000) != 0) // a key held
+        { 
+            vCamera.x += 1.0f;
+        }
+        if ((GetAsyncKeyState(0x44) & 0x8000) != 0) // d key held
+        { 
+            vCamera.x -= 1.0f;
+        }
 
-            // rotation y
-            matRotY = Matrix_MakeRotationY(fThetaY);
-            // rotation x
-            matRotX = Matrix_MakeRotationX(fThetaX);
+        vec3d vForward = Vector_Mul(vLookDir, 1.0f);
+
+        if ((GetAsyncKeyState(0x57) & 0x8000) != 0) // w key held
+        { 
+            vCamera = Vector_Add(vCamera, vForward);
         }
-        else
-        {
-            leftButtonHold = false;
+        if ((GetAsyncKeyState(0x53) & 0x8000) != 0) // s key held
+        { 
+            vCamera = Vector_Sub(vCamera, vForward);
         }
-        if ((GetAsyncKeyState(0x5A) & 0x8000) != 0)
-        { // z key pressed
-            zoom--;
+
+        if ((GetAsyncKeyState(0x25) & 0x8000) != 0) // left key held
+        { 
+            fYaw -=0.05f;
         }
-        else if ((GetAsyncKeyState(0x58) & 0x8000) != 0)
-        { // x key pressed
-            zoom++;
+        if ((GetAsyncKeyState(0x27) & 0x8000) != 0) // right key held
+        { 
+            fYaw += 0.05f;
         }
+        // if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
+        // { // when left click is hold
+        //     GetCursorPos(&cursorPos);
+        //     if (leftButtonHold == false)
+        //     {
+        //         prevXM = cursorPos.x;
+        //         prevYM = cursorPos.y;
+        //         leftButtonHold = true;
+        //     }
+        //     differenceX = prevXM - cursorPos.x;
+        //     differenceY = prevYM - cursorPos.y;
+        //     fThetaX -= differenceY * 0.01; // dragging mouse in y direction give means rotating wrt to x axis and -ve for invertmouseY just like in videogames
+        //     fThetaY -= differenceX * 0.01;
+        //     prevXM = cursorPos.x;
+        //     prevYM = cursorPos.y;
+
+        //     // rotation y
+        //     matRotY = Matrix_MakeRotationY(fThetaY);
+        //     // rotation x
+        //     matRotX = Matrix_MakeRotationX(fThetaX);
+        // }
+        // else
+        // {
+        //     leftButtonHold = false;
+        // }
+        // if ((GetAsyncKeyState(0x5A) & 0x8000) != 0)
+        // { // z key pressed
+        //     zoom--;
+        // }
+        // else if ((GetAsyncKeyState(0x58) & 0x8000) != 0)
+        // { // x key pressed
+        //     zoom++;
+        // }
 
         cleardevice(); // when clear device is inside the key press loop, then multiple border ficklering occurs, so, cleardevice should be outside so its being cleared every time
         // draw triangles
@@ -166,9 +204,22 @@ public:
         matWorld = Matrix_MultiplyMatrix(matRotY, matRotX);   // Transform by rotation
         matWorld = Matrix_MultiplyMatrix(matWorld, matTrans); // Transform by translation
 
+        // vec3d vLookDir = {0,0,1};
+        vec3d vUp = {0,1,0};
+        // vec3d vTarget = Vector_Add(vCamera, vLookDir);
+        vec3d vTarget = {0,0,1};
+        mat4x4 matCameraRot = Matrix_MakeRotationY(fYaw);
+        vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
+        vTarget = Vector_Add(vCamera, vLookDir);
+
+        mat4x4 matCamera = Matrix_PointAt(vCamera, vTarget, vUp);
+
+        //make view matrix from camera
+        mat4x4 matView = Matrix_QuickInverse(matCamera);
+
         for (auto tri : meshObj.tris)
         {
-            triangle triProjected, triTransformed;
+            triangle triProjected, triTransformed, triViewed;
             vec3d normal, line1, line2;
 
             triTransformed.p[0] = Matrix_MultiplyVector(matWorld, tri.p[0]);
@@ -190,10 +241,16 @@ public:
 
             // if (Vector_DotProduct(normal, vCameraRay) < 0.0f)
             // {
+                //Convert world space to view space
+                triViewed.p[0] = Matrix_MultiplyVector(matView, triTransformed.p[0]);
+                triViewed.p[1] = Matrix_MultiplyVector(matView, triTransformed.p[1]);
+                triViewed.p[2] = Matrix_MultiplyVector(matView, triTransformed.p[2]);
+
+
                 // Project triangles from 3D --> 2D
-                triProjected.p[0] = Matrix_MultiplyVector(matProj, triTransformed.p[0]);
-                triProjected.p[1] = Matrix_MultiplyVector(matProj, triTransformed.p[1]);
-                triProjected.p[2] = Matrix_MultiplyVector(matProj, triTransformed.p[2]);
+                triProjected.p[0] = Matrix_MultiplyVector(matProj, triViewed.p[0]);
+                triProjected.p[1] = Matrix_MultiplyVector(matProj, triViewed.p[1]);
+                triProjected.p[2] = Matrix_MultiplyVector(matProj, triViewed.p[2]);
 
                 // Scale into view, we moved the normalising into cartesian space
 				// out of the matrix.vector function from the previous videos, so
@@ -389,6 +446,41 @@ private:
         return matrix;
     }
 
+    mat4x4 Matrix_PointAt(vec3d &pos, vec3d &target, vec3d &up){
+        //calculate new forward direction
+        vec3d newForward = Vector_Sub(target, pos);
+        newForward = Vector_Normalise(newForward);
+
+        //calculate new up direction
+        vec3d a = Vector_Mul(newForward, Vector_DotProduct(up, newForward));
+        vec3d newUp = Vector_Sub(up, a);
+        newUp = Vector_Normalise(newUp);
+
+        // new right direction
+        vec3d newRight = Vector_CrossProduct(newUp, newForward);
+
+        //construct dimensioning and translation matrix
+        mat4x4 matrix; 
+        matrix.m[0][0] = newRight.x;	matrix.m[0][1] = newRight.y;	matrix.m[0][2] = newRight.z;	matrix.m[0][3] = 0.0f;
+		matrix.m[1][0] = newUp.x;		matrix.m[1][1] = newUp.y;		matrix.m[1][2] = newUp.z;		matrix.m[1][3] = 0.0f;
+		matrix.m[2][0] = newForward.x;	matrix.m[2][1] = newForward.y;	matrix.m[2][2] = newForward.z;	matrix.m[2][3] = 0.0f;
+		matrix.m[3][0] = pos.x;			matrix.m[3][1] = pos.y;			matrix.m[3][2] = pos.z;			matrix.m[3][3] = 1.0f;
+		return matrix;
+    }
+
+    mat4x4 Matrix_QuickInverse(mat4x4 &m) // Only for Rotation/Translation Matrices
+	{
+		mat4x4 matrix;
+		matrix.m[0][0] = m.m[0][0]; matrix.m[0][1] = m.m[1][0]; matrix.m[0][2] = m.m[2][0]; matrix.m[0][3] = 0.0f;
+		matrix.m[1][0] = m.m[0][1]; matrix.m[1][1] = m.m[1][1]; matrix.m[1][2] = m.m[2][1]; matrix.m[1][3] = 0.0f;
+		matrix.m[2][0] = m.m[0][2]; matrix.m[2][1] = m.m[1][2]; matrix.m[2][2] = m.m[2][2]; matrix.m[2][3] = 0.0f;
+		matrix.m[3][0] = -(m.m[3][0] * matrix.m[0][0] + m.m[3][1] * matrix.m[1][0] + m.m[3][2] * matrix.m[2][0]);
+		matrix.m[3][1] = -(m.m[3][0] * matrix.m[0][1] + m.m[3][1] * matrix.m[1][1] + m.m[3][2] * matrix.m[2][1]);
+		matrix.m[3][2] = -(m.m[3][0] * matrix.m[0][2] + m.m[3][1] * matrix.m[1][2] + m.m[3][2] * matrix.m[2][2]);
+		matrix.m[3][3] = 1.0f;
+		return matrix;
+	}
+
     void drawTriangle(float x1, float y1, float x2, float y2, float x3, float y3)
     {
         // drawLine(x1,y1,x2,y2,WHITE);
@@ -404,7 +496,7 @@ int main()
 {
     DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
     DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    renderer car("fiatUNOLowPoly.obj", screenWidth, screenHeight, -3, -3);
+    renderer car("axis.obj", screenWidth, screenHeight, -3, -3);
 
     while (1)
     {
