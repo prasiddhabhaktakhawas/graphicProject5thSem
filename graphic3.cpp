@@ -127,24 +127,24 @@ public:
 
         setactivepage(page); // double buffer method
         setvisualpage(1 - page);
-        // if ((GetAsyncKeyState(0x28) & 0x8000) != 0) // down key held
-        // {
-        //     vCamera.y += 1.0f;
-        // }
-        // if ((GetAsyncKeyState(0x26) & 0x8000) != 0) // up key held
-        // {
-        //     vCamera.y -= 1.0f;
-        // }
         if ((GetAsyncKeyState(0x28) & 0x8000) != 0) // down key held
         {
-            fXaw -= 0.05f;
-            
+            vCamera.y += 1.0f;
         }
         if ((GetAsyncKeyState(0x26) & 0x8000) != 0) // up key held
         {
-            fXaw += 0.05f;
-          
+            vCamera.y -= 1.0f;
         }
+        // if ((GetAsyncKeyState(0x28) & 0x8000) != 0) // down key held
+        // {
+        //     fXaw -= 0.05f;
+            
+        // }
+        // if ((GetAsyncKeyState(0x26) & 0x8000) != 0) // up key held
+        // {
+        //     fXaw += 0.05f;
+          
+        // }
         if ((GetAsyncKeyState(0x44) & 0x8000) != 0) // d key held
         {
             vCamera.x += 1.0f;
@@ -229,8 +229,9 @@ public:
         // vec3d vTarget = Vector_Add(vCamera, vLookDir);
         vec3d vUp = {0, 1, 0};
         vec3d vTarget = {0, 0, 1};
-          
-        matCameraRot = Matrix_Adder(Matrix_MakeRotationY(fYaw), Matrix_MakeRotationX(fXaw)); 
+        
+        matCameraRot = Matrix_MakeRotationY(fYaw);
+        // matCameraRot = Matrix_Adder(Matrix_MakeRotationY(fYaw), Matrix_MakeRotationX(fXaw)); 
         vLookDir = Matrix_MultiplyVector(matCameraRot, vTarget);
         vTarget = Vector_Add(vCamera, vLookDir);
 
@@ -266,8 +267,8 @@ public:
             // Get Ray from triangle to camera
             vec3d vCameraRay = Vector_Sub(triTransformed.p[0], vCamera);
 
-            // if (Vector_DotProduct(normal, vCameraRay) < 0.0f)
-            // {
+            //if (Vector_DotProduct(normal, vCameraRay) < 0.0f)
+            //{
             // Convert world space to view space
             triViewed.p[0] = Matrix_MultiplyVector(matView, triTransformed.p[0]);
             triViewed.p[1] = Matrix_MultiplyVector(matView, triTransformed.p[1]);
@@ -307,8 +308,8 @@ public:
                 // drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
 
                 vecTrianglesToRaster.push_back(triProjected);
-                //}
             }
+            //}
         }
         // sort triangles from back to front
         sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle &t1, triangle &t2)
@@ -372,7 +373,8 @@ public:
             // Draw the transformed, viewed, clipped, projected, sorted, clipped triangles
             for (auto &t : listTriangles)
             {
-                drawTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y);
+                //drawTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y);
+                fillTriangle(t.p[0].x, t.p[0].y, t.p[1].x, t.p[1].y, t.p[2].x, t.p[2].y);
             }
         }
         page = 1 - page; // double buffer method
@@ -737,13 +739,73 @@ private:
         line(x2, y2, x3, y3);
         line(x3, y3, x1, y1);
     }
+    void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3){
+    float ymin;
+    float ymax;
+    float xmin;
+    float xmax;
+    if(y1>=y2 && y1>=y3)
+        ymax=y1;
+    else if(y2>=y1 && y2>=y3)
+        ymax=y2;
+    else
+        ymax=y3;
+
+    if(y1<=y2 && y1<=y3)
+        ymin=y1;
+    else if(y2<=y1 && y2<=y3)
+        ymin=y2;
+    else
+        ymin=y3;
+
+    if(x1>=x2 && x1>=x3)
+        xmax=x1;
+    else if(x2>=x1 && x2>=x3)
+        xmax=x2;
+    else
+        xmax=x3;
+
+    if(x1<=x2 && x1<=x3)
+        xmin=x1;
+    else if(x2<=x1 && x2<=x3)
+        xmin=x2;
+    else
+        xmin=x3;
+    
+    for(int i=ymin; i<=ymax; i++){
+        for(int j=xmin; j<=xmax; j++){
+            if(isInside(x1,y1,x2,y2,x3,y3,j,i))
+                putpixel(j,i, RED);
+        }
+    }
+}
+float area(float x1, float y1, float x2, float y2, float x3, float y3){
+ 
+    return abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2.0);
+}
+
+bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float x, float y){
+
+    float A = area (x1, y1, x2, y2, x3, y3);
+
+    float A1 = area (x, y, x2, y2, x3, y3);
+     
+    float A2 = area (x1, y1, x, y, x3, y3);
+   
+    float A3 = area (x1, y1, x2, y2, x, y);
+     
+    if(A >= A1 + A2 + A3)   //this bug <= instead of == took a lot of time to figure out lol. LAMO, again mistake, it should be >=, but still some triangles are filled and some aren't properly
+        return true;
+    else
+        return false;
+}
 };
 
 int main()
 {
     DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
     DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    renderer car("houseLowPoly.obj", screenWidth, screenHeight, -3, -3);
+    renderer car("cube.obj", screenWidth, screenHeight, -3, -3);
 
     while (1)
     {
