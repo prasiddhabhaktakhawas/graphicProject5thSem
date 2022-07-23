@@ -394,6 +394,7 @@ public:
                 vecTrianglesToRaster.push_back(triProjected);
                 }
             }
+            //}
         }
         // sort triangles from back to front
         sort(vecTrianglesToRaster.begin(), vecTrianglesToRaster.end(), [](triangle &t1, triangle &t2)
@@ -1051,7 +1052,6 @@ private:
         line(x2, y2, x3, y3);
         line(x3, y3, x1, y1);
     }
-
 };
 
 int main()
