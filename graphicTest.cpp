@@ -20,6 +20,7 @@ struct vec3d
 struct triangle
 {
     vec3d p[3];
+    short col;
 };
 
 struct mesh
@@ -39,6 +40,10 @@ bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float 
 void fillTriangle(float x1, float y1, float x2, float y2, float x3, float y3);
 void drawLine(int x1, int y1, int x2, int y2, int c);
 bool loadFromObj(string fileName);
+int GetColour(float lum);
+void TexturedTriangle(	int x1, int y1, 
+							int x2, int y2, 
+							int x3, int y3, short col);
 mesh meshObj;
 
 int main()
@@ -48,7 +53,7 @@ int main()
     // int gd = DETECT, gm;
     // initgraph(&gd,&gm, (char*)"");
 
-    loadFromObj("totCar.obj");
+    loadFromObj("cyber.obj");
     // s
     mat4x4 matProj, matRotX, matRotY, matRotZ;
 
@@ -228,12 +233,24 @@ int main()
             normal.y /= l;
             normal.z /= l; // unit vector of normal to surface
 
-            // if (normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0f)
-            // {
+            if (normal.x * (triTranslated.p[0].x - vCamera.x) + normal.y * (triTranslated.p[0].y - vCamera.y) + normal.z * (triTranslated.p[0].z - vCamera.z) < 0.0f)
+            {
+
+                vec3d light_direction = { -1.0f, -1.0f, -1.0f };
+				float l = sqrtf(light_direction.x*light_direction.x + light_direction.y*light_direction.y + light_direction.z*light_direction.z);
+				light_direction.x /= l; light_direction.y /= l; light_direction.z /= l;
+
+				// How "aligned" are light direction and triangle surface normal?
+				float dp = normal.x * light_direction.x + normal.y * light_direction.y + normal.z * light_direction.z;
+
+				// Choose console colours as required (much easier with RGB)
+				int c = GetColour(dp);
+				triTranslated.col = c;
 
                 MultiplyMatrixVector(triTranslated.p[0], triProjected.p[0], matProj);
                 MultiplyMatrixVector(triTranslated.p[1], triProjected.p[1], matProj);
                 MultiplyMatrixVector(triTranslated.p[2], triProjected.p[2], matProj);
+                triProjected.col = triTranslated.col;
 
                 triProjected.p[0].x += 1.0f;
                 triProjected.p[0].y += 1.0f; // since -1.0 would go out of screen of left side, so +1.0 to bring it to 0, which is inside screen
@@ -255,7 +272,7 @@ int main()
                 vecTrianglesToRaster.push_back(triProjected);
 
                 
-            // }
+            }
             
         }
         //sort triangles from back to front
@@ -267,7 +284,8 @@ int main()
 
         for(auto &triProjected: vecTrianglesToRaster){
             // setfillstyle(SOLID_FILL,RED);
-            drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
+            //drawTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y);
+            TexturedTriangle(triProjected.p[0].x, triProjected.p[0].y, triProjected.p[1].x, triProjected.p[1].y, triProjected.p[2].x, triProjected.p[2].y, triProjected.col);
             // float midX = (triProjected.p[0].x+triProjected.p[1].x+triProjected.p[2].x)/3.0f;
             // float midY = (triProjected.p[0].y+triProjected.p[1].y+triProjected.p[2].y)/3.0f;
             // floodfill(midX,midY,RED);
@@ -415,6 +433,37 @@ void drawLine(int x1, int y1, int x2, int y2, int c)
         }
     }
 }
+
+int GetColour(float lum)
+	{
+		int bg_col;
+		
+		int pixel_bw = (int)(13.0f*lum);
+		switch (pixel_bw)
+		{
+		case 0: bg_col = BLACK; break;
+
+		case 1: bg_col = BLACK;   break;
+		case 2: bg_col = BLACK;  break;
+		case 3: bg_col =BLACK;  break;
+		case 4: bg_col = BLACK;  break;
+
+		case 5: bg_col = DARKGRAY; break;
+		case 6: bg_col = DARKGRAY; break;
+		case 7: bg_col = DARKGRAY; break;
+		case 8: bg_col = DARKGRAY; break;
+
+		case 9:  bg_col = LIGHTGRAY; break;
+		case 10: bg_col =LIGHTGRAY; break;
+		case 11: bg_col =LIGHTGRAY; break;
+		case 12: bg_col =LIGHTGRAY; break;
+		default:
+			bg_col = BLACK;
+		}
+
+		return bg_col;
+	}
+
 void TexturedTriangle(	int x1, int y1, 
 							int x2, int y2, 
 							int x3, int y3, short col)
