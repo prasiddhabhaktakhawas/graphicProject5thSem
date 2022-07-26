@@ -129,6 +129,7 @@ private:
     string objName;
     mat4x4 matProj, matRotX, matRotY;
     mesh meshObj;
+    mesh meshObj2;
     vec3d vLookDir;
     vec3d vCamera;
     POINT cursorPos;
@@ -152,7 +153,7 @@ private:
 
 public:
     // constructor
-    renderer(string objName, DWORD screenWidth, DWORD screenHeight, int xOffset, int yOffset)
+    renderer(string objName, string objName2, DWORD screenWidth, DWORD screenHeight, int xOffset, int yOffset)
     {
         initwindow(screenWidth, screenHeight, "", -3, -3);
         this->objName = objName;
@@ -163,6 +164,8 @@ public:
         matProj = Matrix_MakeProjection(90.0f, (float)screenHeight / (float)screenWidth, 0.1f, 1000.0f);
 
         meshObj.LoadFromObjectFile(objName, true);
+        meshObj2.LoadFromObjectFile(objName2, true);
+
         pDepthBuffer = new float[screenWidth * screenHeight];
         // meshObj.tris = {
 
@@ -196,7 +199,7 @@ public:
         vCamera.z = 0.0f;
 
         // without this, nothing will appear on screen at first
-        matCameraRot = Matrix_MakeRotationY(fYaw);
+        //matCameraRot = Matrix_MakeRotationY(fYaw);
         // rotation y
         matRotY = Matrix_MakeRotationY(fYaw);
         // rotation x
@@ -258,6 +261,12 @@ public:
         if ((GetAsyncKeyState(0x27) & 0x8000) != 0) // right key held
         {
             fYaw += 2.0f * elapsedTime;
+        }
+        if (GetAsyncKeyState(0x20)  != 0) // space key held
+        {
+            mesh tempObj = meshObj;
+            meshObj = meshObj2;
+            meshObj2 = tempObj; 
         }
         // if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
         // { // when left click is hold
@@ -1139,7 +1148,7 @@ int main()
 {
     DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
     DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    renderer car("cyberTruckTex.obj", screenWidth, screenHeight, -3, -3);
+    renderer car("exteriorCar.obj","cyberTruckTex.obj", screenWidth, screenHeight, -3, -3);
 
     while (1)
     {
