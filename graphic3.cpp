@@ -141,6 +141,7 @@ private:
     float fThetaY = 0.0f;
     float zoom = 0.0f;
     int page = 0;
+    int c=0; //for toggle interior and exterior models
     float *pDepthBuffer = nullptr;
     mat4x4 matCameraRot;
     std::chrono::time_point<std::chrono::system_clock> m_tp1, m_tp2;
@@ -201,9 +202,9 @@ public:
         // without this, nothing will appear on screen at first
         //matCameraRot = Matrix_MakeRotationY(fYaw);
         // rotation y
-        matRotY = Matrix_MakeRotationY(fYaw);
+        matRotY = Matrix_MakeRotationY(fThetaY);
         // rotation x
-        matRotX = Matrix_MakeRotationX(fXaw);
+        matRotX = Matrix_MakeRotationX(fThetaX);
         m_tp1 = std::chrono::system_clock::now();
         m_tp2 = std::chrono::system_clock::now();
     }
@@ -214,13 +215,17 @@ public:
         m_tp1 = m_tp2;
         // std::cout<<elapsedTime.count()<<std::endl;
         float elapsedTime = fElapsedTime.count();
+        // rotation y
+        matRotY = Matrix_MakeRotationY(fThetaY);
+        // rotation x
+        matRotX = Matrix_MakeRotationX(fThetaX);
         setactivepage(page); // double buffer method
         setvisualpage(1 - page);
-        if ((GetAsyncKeyState(0x26) & 0x8000) != 0) // up key held
+        if (GetAsyncKeyState(0x26)  != 0) // up key held
         {
             vCamera.y += 8.0f * elapsedTime;
         }
-        if ((GetAsyncKeyState(0x28) & 0x8000) != 0) // down key held
+        if (GetAsyncKeyState(0x28)  != 0) // down key held
         {
             vCamera.y -= 8.0f * elapsedTime;
         }
@@ -234,39 +239,66 @@ public:
         //     fXaw += 0.05f;
 
         // }
-        if ((GetAsyncKeyState(0x41) & 0x8000) != 0) // a key held
+        if (GetAsyncKeyState(0x41) != 0) // a key held
         {
             vCamera.x += 8.0f * elapsedTime;
         }
-        if ((GetAsyncKeyState(0x44) & 0x8000) != 0) // d key held
+        if (GetAsyncKeyState(0x44) != 0) // d key held
         {
             vCamera.x -= 8.0f * elapsedTime;
         }
 
         vec3d vForward = Vector_Mul(vLookDir, 8.0f * elapsedTime);
 
-        if ((GetAsyncKeyState(0x57) & 0x8000) != 0) // w key held
+        if (GetAsyncKeyState(0x57) != 0) // w key held
         {
             vCamera = Vector_Add(vCamera, vForward);
         }
-        if ((GetAsyncKeyState(0x53) & 0x8000) != 0) // s key held
+        if (GetAsyncKeyState(0x53)  != 0) // s key held
         {
             vCamera = Vector_Sub(vCamera, vForward);
         }
 
-        if ((GetAsyncKeyState(0x25) & 0x8000) != 0) // left key held
+        if (GetAsyncKeyState(0x25)  != 0) // left key held
         {
             fYaw -= 2.0f * elapsedTime;
         }
-        if ((GetAsyncKeyState(0x27) & 0x8000) != 0) // right key held
+        if (GetAsyncKeyState(0x27) != 0) // right key held
         {
             fYaw += 2.0f * elapsedTime;
         }
-        if (GetAsyncKeyState(0x20)  != 0) // space key held
+        
+        if (GetAsyncKeyState(0x20)  != 0) // space key pressed
         {
+            c++;
+            if(c==1){
             mesh tempObj = meshObj;
             meshObj = meshObj2;
             meshObj2 = tempObj; 
+            }
+        }else{
+            c=0;
+        }
+
+        if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
+        { // when left click is hold
+            GetCursorPos(&cursorPos);
+            if (leftButtonHold == false)
+            {
+                prevXM = cursorPos.x;
+                prevYM = cursorPos.y;
+                leftButtonHold = true;
+            }
+            differenceX = prevXM - cursorPos.x;
+            differenceY = prevYM - cursorPos.y;
+            fThetaX += differenceY * 0.01; // dragging mouse in y direction give means rotating wrt to x axis and -ve for invertmouseY just like in videogames
+            fThetaY += differenceX * 0.01;
+            prevXM = cursorPos.x;
+            prevYM = cursorPos.y;
+            }
+        else
+        {
+            leftButtonHold = false;
         }
         // if ((GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0)
         // { // when left click is hold
@@ -1148,7 +1180,7 @@ int main()
 {
     DWORD screenWidth = GetSystemMetrics(SM_CXSCREEN);
     DWORD screenHeight = GetSystemMetrics(SM_CYSCREEN);
-    renderer car("exteriorCar.obj","cyberTruckTex.obj", screenWidth, screenHeight, -3, -3);
+    renderer car("exteriorCar.obj","interiorCar.obj", screenWidth, screenHeight, -3, -3);
 
     while (1)
     {
